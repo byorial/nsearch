@@ -47,7 +47,7 @@ class Logic(object):
         # TV-OTT
         'ott_show_scheduler_auto_start' : 'False', 
         'ott_show_scheduler_interval' : '10', 
-        'show_library_path' : '/mnt/gdrive/OTT/TV',
+        'show_library_path' : u'/mnt/gdrive/OTT/TV',
         'meta_update_interval' : '1',
         'meta_update_notify' : 'False',
 
