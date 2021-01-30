@@ -70,7 +70,6 @@
     {{ macros.setting_input_int('movie_search_score_limit', '영화검색 최하 기준점수', value=arg['movie_search_score_limit'], desc=['1~100, 영화검색에 표시할 최소 검색점수(낮을수록 많은항목 검색됨)']) }}
     {{ macros.setting_input_text('movie_kodi_path', 'KODI 라이브러리 경로', value=arg['movie_kodi_path'], desc=['KODI라이브러리 경로, DRM영화파일 지원, * Plex에서는 DRM 재생 미지원']) }}
     {{ macros.setting_input_text('movie_plex_path', 'PLEX 라이브러리 경로', value=arg['movie_plex_path'], desc=['PLEX라이브러리 경로, DRM영화 미지원, * strm 파일생성후 PMS로 스캔명령 전송']) }}
-    {{ macros.setting_input_text('movie_list_path', '영화정보 저장폴더', value=arg['movie_list_path'], desc=['등록한 영화파일의 정보를 저장할 폴더(목록용)', '로컬경로로 지정해주세요']) }}
     {{ macros.setting_input_text('movie_fname_rule', '파일명 생성규칙', value=arg['movie_fname_rule'], desc=['파일명 생성규칙, 지원값: {title}, {year}, {country}, {genre}, {rating}, {code}, {drm}, {mpaa}', 'title, year외의 값은 대괄호안에 포함됨, 비어있는 경우 기본값: title']) }}
     {{ macros.setting_checkbox('movie_auto_classfy', '영화자동분류 사용', value=arg['movie_auto_classfy'], desc=['On: strm파일을 메타정보에 따라 분류된 폴더 하위에 생성', 'Off: 라이브러리 경로에 영화파일 생성']) }}
     <div id="movie_auto_classfy_div" class="collapse">
