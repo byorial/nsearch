@@ -27,6 +27,7 @@
       </div>
     </div>
   </form>
+  <div id='page1'></div>
 <div>
 <hr>
 <!--
@@ -40,6 +41,7 @@
   {{ macros.m_hr_head_bottom() }}
 -->
   <div id="list_div"></div>
+  <div id='page2'></div>
 </div>
 
 
@@ -47,10 +49,11 @@
 var package_name = "{{arg['package_name'] }}";
 var sub = "{{arg['sub'] }}";
 var current_data = null;
+var current_page = 1;
 var formData = null;
-var wtype = 'all'
-var gtype = 'all'
-var fpath = null
+var wday = 127
+var genre = 'all'
+var status = -1
 
 $(document).ready(function(){
   formData = get_formdata('#form_search');
@@ -68,11 +71,16 @@ $("#reset_btn").click(function(e) {
   request_search('1')
 });
 
+$("body").on('click', '#page', function(e){
+  e.preventDefault();
+  request_search($(this).data('page'));
+});
+
 $("body").on('click', '#meta_refresh_btn', function(e){
   e.preventDefault();
-  var title = $(this).data('title');
+  var code = $(this).data('code');
   var formData = get_formdata('#form_search');
-  formData += '&list=' + title;
+  formData += '&list=' + code;
   formData += '&ctype=show';
   $.ajax({
     url: '/' + package_name + '/ajax/meta_refresh',
@@ -120,20 +128,20 @@ function all_meta_refresh() {
 
 $("body").on('click', '#file_remove_btn', function(e){
   e.preventDefault();
-  fpath = $(this).data('file_path');
+  code = $(this).data('code');
   document.getElementById("confirm_title").innerHTML = "경고: 파일삭제 확인";
-  document.getElementById("confirm_body").innerHTML = '파일이 삭제됩니다. 진행하시겠습니까?<br>대상파일: ' +fpath+ '<br>Plex 정보는 갱신되지 않습니다.';
-  $('#confirm_button').attr('onclick', "file_remove();");
+  document.getElementById("confirm_body").innerHTML = '파일이 삭제됩니다. 진행하시겠습니까?<br>대상파일: ' +code+ '<br>Plex 정보는 갱신되지 않습니다.';
+  $('#confirm_button').attr('onclick', "file_remove(code);");
   $("#confirm_modal").modal();
   return;
 });
 
-function file_remove() {
+function file_remove(code) {
   $.ajax({
     url: '/' + package_name + '/ajax/file_remove',
     type: "POST", 
     cache: false,
-    data: {fpath: fpath},
+    data: {ctype:'show', code: code},
     dataType: "json",
     success: function (data) {
       if ( data.ret == 'success') {
@@ -141,7 +149,7 @@ function file_remove() {
       } else {
         $.notify('<strong>실패: ' +data.msg+ '</strong>', {type: 'warning'});
       }
-      request_search(1);
+      request_search(current_page);
     }
   });
 }
@@ -160,8 +168,8 @@ $("body").on('click', '#partial_meta_refresh_btn', function(e){
     }
   }
   formData += '&ctype=show';
-  formData += '&wtype=' + wtype;
-  formData += '&gtype=' + gtype;
+  formData += '&wday=' + wday;
+  formData += '&genre=' + genre;
   formData += '&list=' + str;
   $.ajax({
     url: '/' + package_name + '/ajax/meta_refresh',
@@ -180,11 +188,14 @@ $("body").on('click', '#partial_meta_refresh_btn', function(e){
 });
 
 function request_search(page) {
+  current_page = page;
   formData = get_formdata('#form_search');
   ctype = 'show';
   formData += '&ctype=' + ctype;
-  formData += '&wtype=' + wtype;
-  formData += '&gtype=' + gtype;
+  formData += '&wday=' + wday;
+  formData += '&genre=' + genre;
+  formData += '&page=' + page;
+  formData += '&status=' + status;
   $.ajax({
     url: '/' + package_name + '/ajax/plexott_list',
     type: "POST", 
@@ -194,6 +205,7 @@ function request_search(page) {
     success: function (data) {
       window.scrollTo(0,0);
       make_album(data.list)
+      make_page_html(data.paging)
     }
   });
 }
@@ -240,8 +252,8 @@ function make_list(data) {
     }
     str += m_col(5, tmp);
   
-    tmp = m_button2('meta_refresh_btn', '메타갱신', [{'key':'title', 'value':data[i].title}], 'info');
-    tmp += m_button2('file_remove_btn', '파일삭제', [{'key':'file_path', 'value':data[i].file_path}], 'danger');
+    tmp = m_button2('meta_refresh_btn', '메타갱신', [{'key':'code', 'value':data[i].code}], 'info');
+    tmp += m_button2('file_remove_btn', '파일삭제', [{'key':'code', 'value':data[i].code}], 'danger');
     btn_str = m_button_group(tmp);
     str += m_col(3, btn_str);
     
@@ -289,8 +301,8 @@ function make_album(data) {
     str += '</small>';
     str += '</p>';
     str += '<div class="d-flex justify-content-between align-items-center">';
-    tmp = m_button2('meta_refresh_btn', '갱신', [{'key':'title', 'value':data[i].title}], 'info');
-    tmp += m_button2('file_remove_btn', '삭제', [{'key':'file_path', 'value':data[i].file_path}], 'danger');
+    tmp = m_button2('meta_refresh_btn', '갱신', [{'key':'code', 'value':data[i].code}], 'info');
+    tmp += m_button2('file_remove_btn', '삭제', [{'key':'code', 'value':data[i].code}], 'danger');
     btn_str = m_button_group(tmp);
     str += btn_str;
     
@@ -306,72 +318,74 @@ function make_album(data) {
 
 $("body").on('click', '#all_btn', function(e){
   e.preventDefault();
-  wtype='all';
+  wday=127;
   request_search('1');
 });
 $("body").on('click', '#mon_btn', function(e){
   e.preventDefault();
-  wtype='mon';
+  wday=64;
   request_search('1');
 });
 $("body").on('click', '#tue_btn', function(e){
   e.preventDefault();
-  wtype='tue';
+  wday=32;
   request_search('1');
 });
 $("body").on('click', '#wed_btn', function(e){
   e.preventDefault();
-  wtype='wed';
+  wday=16;
   request_search('1');
 });
 $("body").on('click', '#thu_btn', function(e){
   e.preventDefault();
-  wtype='thu';
+  wday=8;
   request_search('1');
 });
 $("body").on('click', '#fri_btn', function(e){
   e.preventDefault();
-  wtype='fri';
+  wday=4;
   request_search('1');
 });
 $("body").on('click', '#sat_btn', function(e){
   e.preventDefault();
-  wtype='sat';
+  wday=2;
   request_search('1');
 });
 $("body").on('click', '#sun_btn', function(e){
   e.preventDefault();
-  wtype='sun';
+  wday=1;
   request_search('1');
 });
+
 $("body").on('click', '#onair_btn', function(e){
   e.preventDefault();
-  wtype='onair';
+  status=1;
   request_search('1');
 });
+
 $("body").on('click', '#end_btn', function(e){
   e.preventDefault();
-  wtype='end';
+  status=2;
   request_search('1');
 });
 $("body").on('click', '#all_genre_btn', function(e){
   e.preventDefault();
-  gtype='all';
+  genre='all';
   request_search('1');
 });
 $("body").on('click', '#dra_btn', function(e){
   e.preventDefault();
-  gtype='dra';
+  genre='dra';
   request_search('1');
 });
 $("body").on('click', '#ent_btn', function(e){
   e.preventDefault();
-  gtype='ent';
+  genre='ent';
   request_search('1');
 });
 $("body").on('click', '#etc_btn', function(e){
   e.preventDefault();
-  gtype='etc';
+  genre='etc';
   request_search('1');
 });
 

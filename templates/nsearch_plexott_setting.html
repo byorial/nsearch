@@ -17,10 +17,28 @@
    {{ macros.m_tab_content_start('normal', true) }}
     {{ macros.setting_input_text('plex_scan_delay', '스캔명령 지연시간(초)', value=arg['plex_scan_delay'], col='3', desc=['strm파일 생성후 스캔명령 전송 대기 시간(초단위)']) }}
     {{ macros.setting_input_text('plex_scan_min_limit', '스캔명령 재전송 제한시간(초)', value=arg['plex_scan_min_limit'], col='3', desc=['동일섹션에 대해 스캔명령을 재 전송할 최소 제한 시간', '10으로 설정시 10초 내에는 동일 섹션에 스캔명령을 전송하지 않음']) }}
+    {{ macros.setting_checkbox('strm_overwrite', 'STRM파일덮어쓰기', value=arg['strm_overwrite'], desc='On : STRM파일이 있는 경우 덮어씀, Off: 파일이 없는 경우만 생성') }}
+    {{ macros.setting_input_int('list_page_size', '페이지당 목록 수', value=arg['list_page_size'], desc=['한 페이지에 표시할 아이템 목록','카드UI를 위해 6의 배수 입력 추천']) }}
     {{ macros.setting_input_text('plex_path_rule', 'PLEX 경로변환규칙', value=arg['plex_path_rule'], desc=['SJVA에서 구글드라이브 경로와 Plex서버상의 경로가 다를경우 사용', '형식: 로컬마운트경로|Plex 상의 경로', '예: /mnt/gdrive|P: (구글드라이브 루트가 Plex 서버에서 P:으로 매칭)']) }}
    {{ macros.m_tab_content_end() }}
    {{ macros.m_tab_content_start('show', false) }}
-    {{ macros.setting_global_scheduler_button(arg['ott_show_scheduler'], arg['is_running']) }}
+   <!--{{ macros.setting_global_scheduler_button(arg['is_include_show'], arg['is_running_show']) }} -->
+{{ macros.setting_top('스케쥴링 작동') }}
+<div class="input-group col-sm-3">
+  {% if arg['is_include_show'] == 'True' %}
+  <input id="show_scheduler" name="show_scheduler" class="form-control form-control-sm" type="checkbox" data-toggle="toggle" checked>
+  {% else %}
+  <input id="show_scheduler" name="show_scheduler" class="form-control form-control-sm" type="checkbox" data-toggle="toggle">
+  {% endif %}
+  {% if arg['is_running_show'] == 'True' %}
+    <span style="padding-left:10px; padding-top: 8px;">동작중</span>
+  {% else %}    
+    {% if arg['is_include_show'] == 'True' %}
+      <span style="padding-left:10px; padding-top: 8px;">대기중</span>
+    {% endif %}  
+  {% endif %}    
+</div>
+{{ macros.setting_bottom('On : 스케쥴링 시작','Off : 스케쥴링 중지') }}
     {{ macros.setting_input_int('ott_show_scheduler_interval', '메타갱신 스케쥴링 실행 정보', value=arg['ott_show_scheduler_interval'], desc=['Inverval(minute 단위)이나 Cron 설정']) }}
     {{ macros.setting_checkbox('ott_show_scheduler_auto_start', '시작시 자동실행', value=arg['ott_show_scheduler_auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }}
     {{ macros.setting_input_text('show_library_path', 'TV 라이브러리 경로', value=arg['show_library_path'], desc=['TV용 strm파일을 생성할 라이브러리 경로']) }}
@@ -28,6 +46,26 @@
     {{ macros.setting_checkbox('meta_update_notify', '메타갱신개별알림', value=arg['meta_update_notify'], desc='On : 메타갱신시 파일별 알림, Off: 메타갱신 완료시 1번만 알림') }}
    {{ macros.m_tab_content_end() }}
    {{ macros.m_tab_content_start('movie', false) }}
+{{ macros.setting_top('스케쥴링 작동') }}
+<div class="input-group col-sm-3">
+  {% if arg['is_include_movie'] == 'True' %}
+  <input id="movie_scheduler" name="movie_scheduler" class="form-control form-control-sm" type="checkbox" data-toggle="toggle" checked>
+  {% else %}
+  <input id="movie_scheduler" name="movie_scheduler" class="form-control form-control-sm" type="checkbox" data-toggle="toggle">
+  {% endif %}
+  {% if arg['is_running_movie'] == 'True' %}
+    <span style="padding-left:10px; padding-top: 8px;">동작중</span>
+  {% else %}    
+    {% if arg['is_include_movie'] == 'True' %}
+      <span style="padding-left:10px; padding-top: 8px;">대기중</span>
+    {% endif %}  
+  {% endif %}    
+</div>
+{{ macros.setting_bottom('On : 스케쥴링 시작','Off : 스케쥴링 중지') }}
+<!--{{ macros.setting_global_scheduler_sub_button(arg['is_include_movie'], arg['is_running_movie']) }} -->
+    {{ macros.setting_input_int('ott_movie_scheduler_interval', '인기영화 스케쥴링 실행정보', value=arg['ott_movie_scheduler_interval'], desc=['Inverval(minute 단위)이나 Cron 설정']) }}
+    {{ macros.setting_checkbox('ott_movie_scheduler_auto_start', '시작시 자동실행', value=arg['ott_movie_scheduler_auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }}
+    {{ macros.setting_input_int('ott_movie_page_limit', '스케쥴링시 조회할 페이지 수', value=arg['ott_movie_page_limit'], desc=['1회 검색시 조회할 페이지 수(각장르별)', '* 큰 값설정시 API를 과도하게 사용할 수 있음']) }}
     {{ macros.setting_checkbox('movie_search_only_possible', '재생가능영화만 검색', value=arg['movie_search_only_possible'], desc=['On: 재생권한이 있는 영화만 검색결과 목록표시']) }}
     {{ macros.setting_input_int('movie_search_score_limit', '영화검색 최하 기준점수', value=arg['movie_search_score_limit'], desc=['1~100, 영화검색에 표시할 최소 검색점수(낮을수록 많은항목 검색됨)']) }}
     {{ macros.setting_input_text('movie_kodi_path', 'KODI 라이브러리 경로', value=arg['movie_kodi_path'], desc=['KODI라이브러리 경로, DRM영화파일 지원, * Plex에서는 DRM 재생 미지원']) }}
@@ -55,6 +93,34 @@ $(document).ready(function(){
 
 $('#movie_auto_classfy').change(function() {
   use_collapse('movie_auto_classfy');
+});
+
+
+// 사용 on / off
+$('#show_scheduler').change(function() {
+  var ret = $(this).prop('checked');
+  $.ajax({
+    url: '/'+package_name+'/ajax/show_scheduler',
+    type: "POST",
+    cache: false,
+    data: {scheduler : ret},
+    dataType: "json",
+    success: function (list) {
+    }
+  });
+});
+
+$('#movie_scheduler').change(function() {
+  var ret = $(this).prop('checked');
+  $.ajax({
+    url: '/'+package_name+'/ajax/movie_scheduler',
+    type: "POST",
+    cache: false,
+    data: {scheduler : ret, sub:sub},
+    dataType: "json",
+    success: function (list) {
+    }
+  });
 });
 
 </script>    

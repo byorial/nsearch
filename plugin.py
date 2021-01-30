@@ -43,7 +43,8 @@ menu = {
     'category' : 'vod',
     'sub2': {
         'plexott': [
-            ['setting', u'설정'], ['show_list',u'TV목록'],['movie_list', u'영화목록']
+            ['setting', u'설정'], ['show_list',u'TV목록'],['movie_list', u'영화목록'],['popular_list', u'인기영화목록조회']
+
         ]
      }
 }
@@ -148,8 +149,10 @@ def second_menu(sub, sub2):
             arg = ModelSetting.to_dict()
             arg['package_name']  = package_name
             if sub2 == 'setting':
-                arg['ott_show_scheduler'] = str(scheduler.is_include('ott_show_scheduler'))
-                arg['is_running'] = str(scheduler.is_running('ott_show_scheduler'))
+                arg['is_include_show'] = str(scheduler.is_include('ott_show_scheduler'))
+                arg['is_running_show'] = str(scheduler.is_running('ott_show_scheduler'))
+                arg['is_include_movie'] = str(scheduler.is_include('ott_movie_scheduler'))
+                arg['is_running_movie'] = str(scheduler.is_running('ott_movie_scheduler'))
             return render_template('%s_%s_%s.html' % (package_name, sub, sub2), arg=arg)
         elif sub == 'log':
             return render_template('log.html', package=package_name)
@@ -310,12 +313,70 @@ def ajax(sub):
                 logger.error(traceback.format_exc())
                 return jsonify('fail')
 
+        elif sub == 'show_scheduler':
+            try:
+                go = request.form['scheduler']
+                logger.debug('scheduler :%s', go)
+                if go == 'true':
+                    Logic.show_scheduler_start()
+                else:
+                    Logic.show_scheduler_stop()
+                return jsonify(go)
+            except Exception as e: 
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                return jsonify('fail')
+
+        elif sub == 'movie_scheduler':
+            try:
+                go = request.form['scheduler']
+                logger.debug('scheduler :%s', go)
+                if go == 'true':
+                    Logic.movie_scheduler_start()
+                else:
+                    Logic.movie_scheduler_stop()
+                return jsonify(go)
+            except Exception as e: 
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                return jsonify('fail')
         elif sub == 'create_strm':
             try:
-                if request.form['ctype'] == 'show':
-                    ret = LogicOtt.create_show_strm(request)
-                else: #movie
-                    ret = LogicOtt.create_movie_strm(request)
+                qitem = {}
+                ctype = request.form['ctype']
+                qitem['ctype'] = ctype
+                if ctype == 'show':
+                    qitem['title'] = request.form['title']
+                    ret =  {'ret':'success', 'data':'{} 추가요청 완료'.format(request.form['title'])}
+                    LogicOtt.StrmThreadQueue.put(qitem)
+                    #ret = LogicOtt.create_show_strm(request)
+                else: #movie, popular_movie
+                    qitem['code'] = request.form['code']
+                    qitem['strm_type'] = request.form['type']
+                    ret =  {'ret':'success', 'data':'{c}/{t} 추가요청 완료'.format(c=request.form['code'], t=request.form['type'])}
+                    LogicOtt.StrmThreadQueue.put(qitem)
+                    #ret = LogicOtt.create_movie_strm(request)
+                return jsonify(ret)
+            except Exception as e:
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                ret = {'ret': 'error', 'data':'Exception! 로그를 확인하세요'}
+                return jsonify(ret)
+        elif sub == 'create_strm_batch':
+            try:
+                ctype = request.form['ctype']
+                strm_type = request.form['type']
+                codes = request.form['code'].split(',')
+                logger.debug('code_list:{c}'.format(c=','.join(codes)))
+                for code in codes:
+                    if code == '': continue
+                    qitem = {}
+                    qitem['ctype'] = ctype
+                    qitem['strm_type'] = strm_type
+                    qitem['code'] = code
+                    LogicOtt.StrmThreadQueue.put(qitem)
+                #ret = LogicOtt.create_movie_strm_batch(request)
+                ret =  {'ret':'success', 'data':'{c}개 추가요청 완료'.format(c=len(codes))}
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -346,6 +407,16 @@ def ajax(sub):
                 logger.error(traceback.format_exc())
                 return jsonify('fail')
 
+        elif sub == 'movie_search_popular':
+            try:
+                logger.debug(request.form)
+                ret = LogicOtt.movie_search_popular(request)
+                return jsonify(ret)
+            except Exception as e:
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                return jsonify('fail')
+
         elif sub == 'meta_refresh':
             try:
                 ctype = request.form['ctype']
@@ -359,14 +430,9 @@ def ajax(sub):
                 return jsonify(ret)
         elif sub == 'file_remove':
             try:
-                # for TV
-                if 'fpath' in request.form:
-                    fpath = request.form['fpath']
-                    req = {'type':'show', 'path':fpath}
-                else: # movie
-                    code = request.form['code']
-                    req = {'type':'movie', 'code':code}
-
+                ctype = request.form['ctype']
+                code = request.form['code']
+                req = {'ctype':ctype, 'code':code}
                 LogicOtt.FileRemoveQueue.put(req)
                 ret = {'ret':'success', 'msg':'파일삭제 요청 완료'}
 

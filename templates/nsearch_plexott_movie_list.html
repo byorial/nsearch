@@ -7,26 +7,39 @@
   <form id="form_search" class="form-inline" style="text-align:left">
     <div class="container-fluid">
       <div class="row show-grid" align="center">
-        <span class="col-md-10">
-	  <input id="search_word" name="search_word" class="form-control form-control-sm w-75" type="text" placeholder="제목입력" aria-label="Search">
+        <span class="col-md-12">
+         <span class="col-md-6">
+	  <input id="search_word" name="search_word" class="form-control form-control-sm w-50" type="text" placeholder="제목입력" aria-label="Search">
+	 </span>
+         <span class="col-md-2">
           {{ macros.m_button_group([['search', '검색'], ['reset_btn', '리셋']]) }}
+         </span>
+         <span class="col-md-4">
 	  <button id="movie_search_modal_btn" name="movie_search_modal_btn" class="btn btn-sm btn-outline-info">영화검색/등록</button>
+         </span>
         </span>
       </div>
       <hr>
-      <div class="row show-grid">
-        <span class="col-md-5" align="left">
+      <span class="col-md-12">
+       <div class="row show-grid">
+        <span class="col-md-3" align="left">
           {{ macros.m_button_group([['all_btn', '전체'], ['kor_btn', '국내'], ['foreign_btn', '해외']]) }}
 	</span>
-        <span class="col-md-5" align="right">
+        <span class="col-md-3" align="center">
+          {{ macros.m_button_group([['site_all_btn', '전체'], ['site_tving_btn', 'Tving'], ['site_wavve_btn', 'Wavve']]) }}
+	</span>
+        <span class="col-md-6" align="right">
           {{ macros.m_button_group([['strm_all_btn', '전체'], ['strm_kodi_btn', 'KODI'], ['strm_plex_btn', 'PLEX']]) }}
 	</span>
+      </span>
       </div>
     </div>
   </form>
+  <div id='page1'></div>
 <div>
 <hr>
   <div id="list_div"></div>
+  <div id='page2'></div>
 </div>
 
 <!-- 영화검색용 Modal -->
@@ -56,7 +69,7 @@
           {{ macros.m_col(9, macros.m_strong('정보')) }}
           {{ macros.m_row_end() }}
           {{ macros.m_hr_head_bottom() }}
- 	  <div id="movie_search_result"></span>
+ 	  <div id="movie_search_result"></div>
 	</div>
 	</div> <!-- body -->
       <div class="modal-footer">
@@ -65,7 +78,6 @@
     </div>
   </div>
 </div><!-- modal -->
-
 
 <script type="text/javascript">
 var package_name = "{{arg['package_name'] }}";
@@ -76,12 +88,19 @@ var search_result = null;
 var formData = null;
 var country = 'all'
 var genre = 'all'
+var site = 'all'
 var strm_type = 'all'
 var fpath = null
+var current_page = 1;
 
 $(document).ready(function(){
   formData = get_formdata('#form_search');
   request_search('1');
+});
+
+$("body").on('click', '#page', function(e){
+  e.preventDefault();
+  request_search($(this).data('page'));
 });
 
 $("#search").click(function(e) {
@@ -110,7 +129,7 @@ function file_remove(code) {
     url: '/' + package_name + '/ajax/file_remove',
     type: "POST", 
     cache: false,
-    data: {code: code},
+    data: {ctype:'movie', code: code},
     dataType: "json",
     success: function (data) {
       if ( data.ret == 'success') {
@@ -118,7 +137,7 @@ function file_remove(code) {
       } else {
         $.notify('<strong>실패: ' +data.msg+ '</strong>', {type: 'warning'});
       }
-      request_search(1);
+      request_search(current_page);
     }
   });
 }
@@ -129,6 +148,10 @@ function request_search(page) {
   formData += '&ctype=' + ctype;
   formData += '&strm_type=' + strm_type;
   formData += '&country=' + country;
+  formData += '&genre=' + genre;
+  formData += '&site=' + site;
+  formData += '&page=' + page;
+  current_page = page;
   $.ajax({
     url: '/' + package_name + '/ajax/plexott_list',
     type: "POST", 
@@ -138,6 +161,7 @@ function request_search(page) {
     success: function (data) {
       window.scrollTo(0,0);
       make_album(data.list)
+      make_page_html(data.paging)
     }
   });
 }
@@ -190,6 +214,21 @@ $("body").on('click', '#foreign_btn', function(e){
   country='foreign';
   request_search('1');
 });
+$("body").on('click', '#site_all_btn', function(e){
+  e.preventDefault();
+  site='all';
+  request_search('1');
+});
+$("body").on('click', '#site_tving_btn', function(e){
+  e.preventDefault();
+  site='tving';
+  request_search('1');
+});
+$("body").on('click', '#site_wavve_btn', function(e){
+  e.preventDefault();
+  site='wavve';
+  request_search('1');
+});
 $("body").on('click', '#strm_all_btn', function(e){
   e.preventDefault();
   strm_type='all';
@@ -206,7 +245,6 @@ $("body").on('click', '#strm_plex_btn', function(e){
   request_search('1');
 });
 
-<!-- 영화검색 modal 관련 -->
 $("body").on('click', '#movie_search_modal_btn', function(e) {
   e.preventDefault();
   $("#movie_search_modal").modal();
@@ -282,6 +320,7 @@ $("#movie_search_modal").on('click', '#modal_reset_btn', function(e){
 $("#movie_search_modal").on('click', '#strm_create_kodi_btn', function(e){
   e.preventDefault();
   code = $(this).data('code');
+  site = $(this).data('site');
   type = 'kodi';
   create_strm(code, type);
 });
@@ -289,6 +328,7 @@ $("#movie_search_modal").on('click', '#strm_create_kodi_btn', function(e){
 $("#movie_search_modal").on('click', '#strm_create_plex_btn', function(e){
   e.preventDefault();
   code = $(this).data('code');
+  site = $(this).data('site');
   type = 'plex';
   create_strm(code, type);
 });
@@ -300,11 +340,11 @@ $("#movie_search_modal").on('click', '#strm_create_all_btn', function(e){
   create_strm(code, type)
 });
 
-function create_strm(code, type) {
+function create_strm(code, strm_type) {
   $.ajax({
     url: '/' + package_name + '/ajax/create_strm',
     type: "POST", cache: false,
-    data: {ctype:'movie', code:code, type:type},
+    data: {ctype:'movie', code:code, type:strm_type},
     dataType: "json",
     success: function (data) {
       if ( data.ret == 'success') {
@@ -312,7 +352,7 @@ function create_strm(code, type) {
       } else {
         $.notify('<strong>실패: ' +data.data+ '</strong>', {type: 'warning'});
       }
-      request_search(1);
+      request_search(current_page);
     }
   });
 }
@@ -326,7 +366,6 @@ $("body").on('click', '#movie_info_btn', function(e){
     }
   }
 });
-
 
 </script>    
 {% endblock %}
