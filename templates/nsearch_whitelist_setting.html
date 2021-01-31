@@ -16,12 +16,24 @@
     {{ macros.setting_checkbox('auto_start', '시작시 자동실행', value=arg['auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }}
     {{ macros.m_hr() }}
     {{ macros.setting_checkbox('auto_wavve_whitelist_active', '웨이브 활성화', value=arg['auto_wavve_whitelist_active'], desc='On : 웨이브 인기 프로그램을 자동으로 화이트리스트에 등록합니다.') }}
+    <div id="auto_wavve_whitelist_active_div" class="collapse">
     {{ macros.setting_input_int('auto_wavve_whitelist_limit', '웨이브 프로그램수', value=arg['auto_wavve_whitelist_limit'], min='1', placeholder='10', desc='최대값 = 30') }}
+    {{ macros.setting_input_textarea('auto_wavve_except_channel', '웨이브 제외 채널', value=arg['auto_wavve_except_channel'], desc=['채널 이름과 일치하면 제외합니다.', ', 또는 Enter로 구분']) }}
+    {{ macros.setting_input_textarea('auto_wavve_except_program', '웨이브 제외 프로그램', value=arg['auto_wavve_except_program'], desc=['이 곳에 있는 항목이 프로그램에 이름에 포함되어 있으면 제외합니다.', ', 또는 Enter로 구분']) }}
+    {{ macros.setting_button([['wavve_channel_list', '확인하기']], left='전체 웨이브 채널 목록' ) }}
+    </div>
     {{ macros.setting_checkbox('auto_tving_whitelist_active', '티빙 활성화', value=arg['auto_tving_whitelist_active'], desc='On : 티빙 인기 프로그램을 자동으로 화이트리스트에 등록합니다.') }}
+    <div id="auto_tving_whitelist_active_div" class="collapse">
     {{ macros.setting_input_int('auto_tving_whitelist_limit', '티빙 프로그램수', value=arg['auto_tving_whitelist_limit'], min='1', placeholder='10', desc='최대값 = 30') }}
-    {{ macros.setting_select('auto_tving_order', '티빙 정렬기준', [['viewDay', '일간'], ['viewWeek', '주간']], col='3', value=arg['auto_tving_order']) }}
+    {{ macros.setting_input_textarea('auto_tving_except_channel', '티빙 제외 채널', value=arg['auto_tving_except_channel'], desc=['채널 이름과 일치하면 제외합니다.', ', 또는 Enter로 구분']) }}
+    {{ macros.setting_input_textarea('auto_tving_except_program', '티빙 제외 프로그램', value=arg['auto_tving_except_program'], desc=['이 곳에 있는 항목이 프로그램에 이름에 포함되어 있으면 제외합니다.', ', 또는 Enter로 구분']) }}
+    {{ macros.setting_button([['tving_channel_list', '확인하기']], left='전체 티빙 채널 목록' ) }}
+    <!-- {{ macros.setting_select('auto_tving_order', '티빙 정렬기준', [['viewDay', '일간'], ['viewWeek', '주간']], col='3', value=arg['auto_tving_order']) }} -->
+    </div>
     {{ macros.setting_radio('auto_priority', '우선 순위', ['웨이브+티빙', '웨이브', '티빙'], value=arg['auto_priority'], desc='웨이브와 티빙 모두 활성화 되어있을 경우만 유효합니다.') }}
     {{ macros.setting_checkbox('auto_delete', '삭제 활성화', value=arg['auto_delete'], desc='On : 최근 30일 이내의 DB에 존재하지 않는 프로그램을 자동으로 화이트리스트에서 삭제합니다.') }}
+    {{ macros.setting_checkbox('auto_download', '다운로드 활성화', value=arg['auto_download'], desc='On : 화이트리스트에 추가될 경우, 한달이내의 다운로드 미완료 상태(상태 : 화이트리스트 제외)인 최신방송을 다운로드합니다.') }}
+    {{ macros.setting_checkbox('auto_sync_w_bot_ktv', '동기화 활성화', value=arg['auto_sync_w_bot_ktv'], desc='On : 봇 다운로드 - TV 플러그인의 화이트리스트에 등록합니다.') }}
     {{ macros.setting_button([['global_setting_save_btn', '저장']]) }}
   </form>
   {{ macros.m_hr() }}
@@ -36,6 +48,16 @@
 var package_name = "{{arg['package_name'] }}";
 
 $(document).ready(function(){
+  use_collapse("auto_wavve_whitelist_active")
+  use_collapse("auto_tving_whitelist_active")
+});
+
+$('#auto_wavve_whitelist_active').change(function() {
+  use_collapse('auto_wavve_whitelist_active');
+});
+
+$('#auto_tving_whitelist_active').change(function() {
+  use_collapse('auto_tving_whitelist_active');
 });
 
 $("body").on('click', '#reset_whitelist_btn', function(e){
@@ -67,6 +89,20 @@ function whitelist_delete() {
     }
   });
 }
+
+$("body").on('click', '#wavve_channel_list', function(e){
+  e.preventDefault();
+  document.getElementById("modal_title").innerHTML = "Wavve 채널 목록";
+  document.getElementById("modal_body").innerHTML = "<pre>KBS 1TV, KBS 2TV, MBC, SBS, EBS, MBN, TV CHOSUN, 채널A, YTN, KBS DRAMA<br>KBS JOY, MBC Music, MBC Drama, MBC Every1, SBS funE, SBS Plus, SBS MTV, SBS Biz, SBS Fil, 폴라리스TV<br>iHQ, TCAST, KTH PLAYY, 해피독TV, AsiaN, 딜라이브, 채널W, JBOX(대원방송), ANIMAX, ANIPLUS<br>Disney, SBS Nick, 캐리TV, 브라보키즈, WAG, SBS Golf, MBC SPORTS+, HISTORY, LIFETIME, YTN 사이언스<br>모터그래프, 영화리뷰, 한국선거방송, 에스엠컬처앤콘텐츠, 유니버설, 소니픽쳐스, WeLike, 코코믹스, 채널차이나, FOX<br>wavve 오리지널, 워너브라더스, ENDEAVOR, NQQ, 깨비키즈, CBS, 지니키즈, 핑크퐁, 에스에스애니멘트, 얼리버드 픽쳐스<br>연합뉴스TV, 영실업, 지앤지 엔터테인먼트, 드림팩토리, IX 미디어, iMBC, NK CONTENTS, JAYE, 넷토피아, BBC Studios<br>아이코닉스, MGM, 카카오M, 몬스터 스튜디오, 한국직업방송, entertainment One</pre>";
+  $("#large_modal").modal();
+});
+
+$("body").on('click', '#tving_channel_list', function(e){
+  e.preventDefault();
+  document.getElementById("modal_title").innerHTML = "Tving 채널 목록";
+  document.getElementById("modal_body").innerHTML = "<pre>tvN, JTBC, TV CHOSUN, 채널A, MBN, Mnet, OCN, O tvN, XtvN, Olive<br>투니버스, ONSTYLE, OCN Movies, 중화TV, JTBC2, OGN, JTBC4, LIFETIME, IHQ, KBS JOY<br>MBC every1, DIA TV, 채널W, E채널, DLIVE, Tcast, 애니맥스, ANI BOX, 초이락, 포켓몬코리아<br>NQQ, 핑크퐁, 현대미디어, 아이코닉스, iMBC, 로이비쥬얼, FTV, 빌리어즈TV, SONY, 삼지애니메이션<br>브릭슨, AsiaN</pre>";
+  $("#large_modal").modal();
+});
 
 </script>    
 {% endblock %}

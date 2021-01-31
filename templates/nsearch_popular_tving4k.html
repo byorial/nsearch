@@ -86,7 +86,7 @@ $(document).ready(function(){
 });
 
 function tving_make_album(ret){
-  data = ret.data.body.result;
+  data = ret.body.result;
   str = '총 ' + data.length + '편';
   str += '<hr>';
   str += '<div class="row">';
@@ -131,7 +131,7 @@ function tving_make_album(ret){
 }
 
 function tving_make_album2(ret){
-  data = ret.data.body.result;
+  data = ret.body.result;
   str = '총 ' + data.length + '편';
   str += '<hr>';
   str += '<div class="row">';
@@ -181,7 +181,7 @@ function tving_make_list(ret) {
   //document.getElementById("modal_title").innerHTML = "Login Result";
   //document.getElementById("modal_body").innerHTML = "<pre>"+JSON.stringify(ret, null, 2) + "</pre>";
   //$("#large_modal").modal();
-  data = ret.data.body.result;
+  data = ret.body.result;
   str = '총 ' + data.length + '편';
 
   for (i in data) {
@@ -232,7 +232,7 @@ function tving_make_list2(ret) {
   //document.getElementById("modal_title").innerHTML = "Login Result";
   //document.getElementById("modal_body").innerHTML = "<pre>"+JSON.stringify(ret, null, 2) + "</pre>";
   //$("#large_modal").modal();
-  data = ret.data.body.result;
+  data = ret.body.result;
   str = '총 ' + data.length + '편';
 
   for (i in data) {

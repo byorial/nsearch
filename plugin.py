@@ -24,7 +24,9 @@ logger = get_logger(package_name)
 
 from .model import ModelSetting, ModelAutoHistory
 from .logic import Logic
-from .logic_normal import LogicNormal
+from .logic_search import LogicSearch
+from .logic_popular import LogicPopular
+from .logic_whitelist import LogicWhitelist
 from .logic_ott import LogicOtt
 
 #########################################################
@@ -50,7 +52,7 @@ menu = {
 }
 
 plugin_info = {
-    'version' : '0.0.8.1',
+    'version' : '0.0.9.1',
     'name' : 'nSearch',
     'category_name' : 'vod',
     'icon' : '',
@@ -134,12 +136,12 @@ def second_menu(sub, sub2):
             elif sub2 == 'wavve':
                 arg = {}
                 arg['package_name']  = package_name
-                wavve_programs = LogicNormal.wavve_get_programs_in_db()
+                wavve_programs = LogicWhitelist.wavve_get_programs_in_db()
                 return render_template('%s_%s_%s.html' % (package_name, sub, sub2), arg=arg, wavve_programs=wavve_programs)
             elif sub2 == 'tving':
                 arg = {}
                 arg['package_name']  = package_name
-                tving_programs = LogicNormal.tving_get_programs_in_db()
+                tving_programs = LogicWhitelist.tving_get_programs_in_db()
                 return render_template('%s_%s_%s.html' % (package_name, sub, sub2), arg=arg, tving_programs=tving_programs)
             elif sub2 == 'history':
                 arg = {}
@@ -224,7 +226,7 @@ def ajax(sub):
                 keyword = request.form['keyword']
                 type = request.form['type']
                 page = request.form['page']
-                ret = LogicNormal.wavve_search_keyword(keyword, type, page)
+                ret = LogicSearch.wavve_search_keyword(keyword, type, page)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -236,7 +238,7 @@ def ajax(sub):
                 keyword = request.form['keyword']
                 type = request.form['type']
                 page = request.form['page']
-                ret = LogicNormal.tving_search_keyword(keyword, type, page)
+                ret = LogicSearch.tving_search_keyword(keyword, type, page)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -246,7 +248,7 @@ def ajax(sub):
         elif sub == 'wavve_whitelist_save':
             try:
                 whitelist_programs = request.form.getlist('wavve_whitelist[]')
-                ret = LogicNormal.wavve_set_whitelist(whitelist_programs)
+                ret = LogicWhitelist.wavve_set_whitelist(whitelist_programs)
                 return jsonify(ret)
             except Exception as e: 
                 logger.error('Exception:%s', e)
@@ -256,7 +258,7 @@ def ajax(sub):
         elif sub == 'tving_whitelist_save':
             try:
                 whitelist_programs = request.form.getlist('tving_whitelist[]')
-                ret = LogicNormal.tving_set_whitelist(whitelist_programs)
+                ret = LogicWhitelist.tving_set_whitelist(whitelist_programs)
                 return jsonify(ret)
             except Exception as e: 
                 logger.error('Exception:%s', e)
@@ -266,8 +268,7 @@ def ajax(sub):
         elif sub == 'wavve_popular':
             try:
                 type = request.form['type']
-                # ret = LogicNormal.wavve_get_popular_list(type) # Unwanted thumbnail
-                ret = LogicNormal.wavve_get_cfpopular_json(type)
+                ret = LogicPopular.wavve_get_popular_json(type)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -277,7 +278,7 @@ def ajax(sub):
         elif sub == 'tving_popular':
             try:
                 type = request.form['type']
-                ret = LogicNormal.tving_get_popular_json(type)
+                ret = LogicPopular.tving_get_popular_json(type)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -287,7 +288,7 @@ def ajax(sub):
         elif sub == 'tving4k':
             try:
                 type = request.form['type']
-                ret = LogicNormal.tving_get_SMTV_PROG_4K_json(type)
+                ret = LogicPopular.tving_get_SMTV_PROG_4K_json(type)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -297,7 +298,7 @@ def ajax(sub):
         elif sub == 'ratings':
             try:
                 keyword = request.form['keyword']
-                ret = LogicNormal.daum_get_ratings_list(keyword)
+                ret = LogicPopular.daum_get_ratings_list(keyword)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)

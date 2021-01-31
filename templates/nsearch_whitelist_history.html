@@ -99,6 +99,7 @@ function make_list(data) {
     }
     str += m_col(1, tmp);
     str += m_col(5, data[i].title);
+    // str += m_col(5, '[' + data[i].channelname + ']' + data[i].title);
     str += m_col(2, data[i].created_time);
     tmp = ''
     if (data[i].source == 'wavve') {
