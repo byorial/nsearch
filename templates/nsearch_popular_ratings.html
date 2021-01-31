@@ -67,6 +67,17 @@ $(document).ready(function(){
       make_ratings_album(data, 'dra');
 	  }
   })
+  var keyword = '월요일예능';
+  $.ajax({
+    url: '/' + package_name + '/ajax/ratings',
+    type: "POST",
+    cache: false,
+    data: {keyword:keyword},
+    dataType: "json",
+    success: function (data) {
+      make_ratings_album(data, 'ent');
+	  }
+  })
 });
 
 $("#search_dra1,#search_dra2,#search_dra3,#search_dra4").click(function(e) {

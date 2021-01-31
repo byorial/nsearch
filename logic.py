@@ -17,7 +17,7 @@ from framework.util import Util
 # 패키지
 from .plugin import logger, package_name
 from .model import ModelSetting
-from .logic_normal import LogicNormal
+from .logic_whitelist import LogicWhitelist
 from .logic_ott import LogicOtt
 
 #########################################################
@@ -33,11 +33,17 @@ class Logic(object):
         'auto_start' : '60', 
         'auto_wavve_whitelist_active' : 'False',
         'auto_wavve_whitelist_limit' : '20',
+        'auto_wavve_except_channel' : '',
+        'auto_wavve_except_program' : '',
         'auto_tving_whitelist_active' : 'False',
         'auto_tving_whitelist_limit' : '20',
-        'auto_tving_order' : 'viewDay',
+        'auto_tving_except_channel' : '',
+        'auto_tving_except_program' : '',
+        # 'auto_tving_order' : 'viewDay',
         'auto_priority' : '0',
         'auto_delete' : 'False',
+        'auto_download' : 'False',
+        'auto_sync_w_bot_ktv' : 'False'
         
         # added by orial
         # 일반
@@ -206,7 +212,7 @@ class Logic(object):
     @staticmethod
     def scheduler_function():
         try:
-            LogicNormal.scheduler_function()
+            LogicWhitelist.scheduler_function()
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
@@ -244,11 +250,11 @@ class Logic(object):
         try:
             empty = []
             try:
-                LogicNormal.wavve_set_whitelist(empty)
+                LogicWhitelist.wavve_set_whitelist(empty)
             except Exception:
                 pass
             try:
-                LogicNormal.tving_set_whitelist(empty)
+                LogicWhitelist.tving_set_whitelist(empty)
             except Exception:
                 pass
             return True
@@ -256,4 +262,3 @@ class Logic(object):
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
             return False
-    
