@@ -43,7 +43,7 @@ class Logic(object):
         'auto_priority' : '0',
         'auto_delete' : 'False',
         'auto_download' : 'False',
-        'auto_sync_w_bot_ktv' : 'False'
+        'auto_sync_w_bot_ktv' : 'False',
         
         # added by orial
         # 일반
