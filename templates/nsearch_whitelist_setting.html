@@ -28,7 +28,7 @@
     {{ macros.setting_input_textarea('auto_tving_except_channel', '티빙 제외 채널', value=arg['auto_tving_except_channel'], desc=['채널 이름과 일치하면 제외합니다.', ', 또는 Enter로 구분']) }}
     {{ macros.setting_input_textarea('auto_tving_except_program', '티빙 제외 프로그램', value=arg['auto_tving_except_program'], desc=['이 곳에 있는 항목이 프로그램에 이름에 포함되어 있으면 제외합니다.', ', 또는 Enter로 구분']) }}
     {{ macros.setting_button([['tving_channel_list', '확인하기']], left='전체 티빙 채널 목록' ) }}
-    <!-- {{ macros.setting_select('auto_tving_order', '티빙 정렬기준', [['viewDay', '일간'], ['viewWeek', '주간']], col='3', value=arg['auto_tving_order']) }} -->
+    {{ macros.setting_select('auto_tving_order', '티빙 정렬기준', [['viewDay', '일간'], ['viewWeek', '주간']], col='3', value=arg['auto_tving_order']) }}
     </div>
     {{ macros.setting_radio('auto_priority', '우선 순위', ['웨이브+티빙', '웨이브', '티빙'], value=arg['auto_priority'], desc='웨이브와 티빙 모두 활성화 되어있을 경우만 유효합니다.') }}
     {{ macros.setting_checkbox('auto_delete', '삭제 활성화', value=arg['auto_delete'], desc='On : 최근 30일 이내의 DB에 존재하지 않는 프로그램을 자동으로 화이트리스트에서 삭제합니다.') }}
