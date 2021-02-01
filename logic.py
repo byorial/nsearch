@@ -39,7 +39,7 @@ class Logic(object):
         'auto_tving_whitelist_limit' : '20',
         'auto_tving_except_channel' : '',
         'auto_tving_except_program' : '',
-        # 'auto_tving_order' : 'viewDay',
+        'auto_tving_order' : 'viewDay',
         'auto_priority' : '0',
         'auto_delete' : 'False',
         'auto_download' : 'False',
