@@ -245,6 +245,27 @@ class LogicOtt(object):
         try:
             wavve_list = LogicOtt.get_recent_wavve_list()
             tving_list = LogicOtt.get_recent_tving_list()
+
+            # 화이트리스트에 있으면서 DB에 없는 항목의 경우 strm 생성
+            if ModelSetting.get_bool('auto_create_strm_in_whitelist'):
+                from .logic_whitelist import LogicWhitelist
+
+                wavve_whitelist = LogicWhitelist.wavve_get_whitelist()
+                tving_whitelist = LogicWhitelist.tving_get_whitelist()
+
+                targets = [{'recent_list':wavve_list, 'whitelist':wavve_whitelist}, 
+                        {'recent_list':tving_list, 'whitelist':tving_whitelist}]
+
+                for lists in targets:
+                    for item in lists['recent_list']:
+                        entity = OttShowItem.get_entity_by_title(item['title'])
+                        if entity is None and item['title'] in lists['whitelist']:
+                            qitem = {}
+                            qitem['ctype'] = 'show'
+                            qitem['title'] = item['title']
+                            logger.debug('화이트리스트 항목({t})의 STRM생성요청'.format(t=item['title']))
+                            LogicOtt.StrmThreadQueue.put(qitem)
+
             return wavve_list + tving_list
         except Exception as e:
             logger.error('Exception:%s', e)
@@ -308,9 +329,10 @@ class LogicOtt(object):
         LogicOtt.write_show_strm(target_path, info)
         #logger.debug(json.dumps(info, indent=2))
         LogicOtt.save_show_info(target_path, info)
-        logger.debug('strm 파일 생성완료(%s)', target_path)
-        data ={'type':'success', 'msg':'파일생성완료({p}): 스캔명령전송대기중({t}s)'.format(p=target_path, t=ModelSetting.get('plex_scan_delay'))}
-        socketio.emit("notify", data, namespace='/framework', broadcate=True)
+        if ModelSetting.get_bool('strm_notify_each'):
+            logger.debug('strm 파일 생성완료(%s)', target_path)
+            data ={'type':'success', 'msg':'파일생성완료({p}): 스캔명령전송대기중({t}s)'.format(p=target_path, t=ModelSetting.get('plex_scan_delay'))}
+            socketio.emit("notify", data, namespace='/framework', broadcate=True)
 
         # plex scan
         LogicOtt.PlexScannerQueue.put({'section_id':section_id, 'file_path':target_path, 'now':datetime.now()})
@@ -347,7 +369,6 @@ class LogicOtt(object):
                 return
 
         # strm 파일 생성
-        LogicOtt.write_show_strm(target_path, info)
         if strm_type == 'kodi': LogicOtt.save_data_to_file(target_path, info['kodi_url'])
         else: LogicOtt.save_data_to_file(target_path, info['plex_url'])
 
@@ -355,11 +376,12 @@ class LogicOtt(object):
         LogicOtt.save_movie_info(info)
 
         logger.debug('strm 파일 생성완료(%s)', target_path)
-        if strm_type == 'plex':
-            data ={'type':'success', 'msg':'파일생성완료({p}): 스캔명령전송대기중({t}s)'.format(p=target_path, t=ModelSetting.get('plex_scan_delay'))}
-        else:
-            data ={'type':'success', 'msg':'파일생성완료({p}): 라이브러리를 업데이트해주세요.'.format(p=target_path)}
-        socketio.emit("notify", data, namespace='/framework', broadcate=True)
+        if ModelSetting.get_bool('strm_notify_each'):
+            if strm_type == 'plex':
+                data ={'type':'success', 'msg':'파일생성완료({p}): 스캔명령전송대기중({t}s)'.format(p=target_path, t=ModelSetting.get('plex_scan_delay'))}
+            else:
+                data ={'type':'success', 'msg':'파일생성완료({p}): 라이브러리를 업데이트해주세요.'.format(p=target_path)}
+            socketio.emit("notify", data, namespace='/framework', broadcate=True)
 
         if strm_type == 'plex':
             LogicOtt.PlexScannerQueue.put({'section_id':section_id, 'file_path':target_path, 'now':datetime.now()})
@@ -378,7 +400,7 @@ class LogicOtt(object):
 
             if not os.path.isdir(library_path):
                 logger.error('show_library_path error(%s)', library_path)
-                return {'ret':'error', 'data':'{c} 라이브러리 경로를 확인하세요.'.format(c=ctype)}
+                return {'ret':'error', 'msg':'{c} 라이브러리 경로를 확인하세요.'.format(c=ctype)}
 
             filename = LogicOtt.change_text_for_use_filename(title)
             target_path = os.path.join(library_path, filename + '.strm')
@@ -389,16 +411,16 @@ class LogicOtt(object):
             import plex
             section_id = plex.LogicNormal.get_section_id_by_filepath(plex_path)
             if section_id == -1:
-                return {'ret':'error', 'data':'Plex경로오류! \"{p}\" 경로를 확인해 주세요'.format(p=plex_path)}
+                return {'ret':'error', 'msg':'Plex경로오류! \"{p}\" 경로를 확인해 주세요'.format(p=plex_path)}
 
             logger.debug('get_section_id: path(%s), section_id(%s)', library_path, section_id)
             LogicOtt.do_show_strm_proc(ctype, target_path, section_id)
 
-            return {'ret':'success', 'data':'{title} 추가요청 완료'.format(title=title)}
+            return {'ret':'success', 'msg':'{title} 추가요청 완료'.format(title=title)}
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
-            return {'ret':'error', 'data': '에러발생, 로그를 확인해주세요'}
+            return {'ret':'error', 'msg': '에러발생, 로그를 확인해주세요'}
 
     @staticmethod
     def create_movie_strm(ctype, stype, code):
@@ -417,20 +439,20 @@ class LogicOtt(object):
 
                 if info == None:
                     logger.debug('정보 획득 실패: ctype:%s, code:%s)', ctype, code)
-                    return {'ret':'error', 'data':'정보 획득 실패, 로그를 확인하세요.'}
+                    return {'ret':'error', 'msg':'정보 획득 실패, 로그를 확인하세요.'}
 
 
                 library_path = LogicOtt.get_movie_target_path(info, strm_type)
                 if library_path == None:
                     logger.debug('라이브러리 경로 획득 실패: ctype:%s, code:%s)', ctype, code)
-                    return {'ret':'error', 'data':'라이브러리 경로 획득 실패, 로그를 확인하세요.'}
+                    return {'ret':'error', 'msg':'라이브러리 경로 획득 실패, 로그를 확인하세요.'}
 
                 if not os.path.isdir(library_path): os.makedirs(library_path)
                 logger.debug('strm 생성 요청하기(유형:%s, code:%s)', strm_type, code)
 
                 filename = LogicOtt.get_movie_target_fname(info)
                 if filename == None:
-                    return {'ret':'error', 'data':'파일이름을 얻어오지 못했습니다.'}
+                    return {'ret':'error', 'msg':'파일이름을 얻어오지 못했습니다.'}
     
                 target_path = os.path.join(library_path, filename + '.strm')
                 logger.debug('classyfied file-path: {p}'.format(p=target_path))
@@ -443,7 +465,7 @@ class LogicOtt(object):
                     import plex
                     section_id = plex.LogicNormal.get_section_id_by_filepath(plex_path)
                     if section_id == -1:
-                        return {'ret':'error', 'data':'Plex경로오류! \"{p}\" 경로를 확인해 주세요'.format(p=plex_path)}
+                        return {'ret':'error', 'msg':'Plex경로오류! \"{p}\" 경로를 확인해 주세요'.format(p=plex_path)}
 
                     logger.debug('get_section_id: path(%s), section_id(%s)', library_path, section_id)
 
@@ -453,7 +475,7 @@ class LogicOtt(object):
                     LogicOtt.do_movie_strm_proc(code, strm_type, target_path, -1)
                     logger.debug('%s 추가 완료', target_path)
  
-            return {'ret':'success', 'data':'{p} 추가요청 완료'.format(p=target_path)}
+            return {'ret':'success', 'msg':'{p} 추가요청 완료'.format(p=target_path)}
 
         except Exception as e:
             logger.error('Exception:%s', e)
@@ -769,7 +791,7 @@ class LogicOtt(object):
         return file_list
 
     @staticmethod
-    def plexott_show_list(req):
+    def ott_show_list(req):
         try:
             #logger.debug(req.form)
             ret = OttShowItem.item_list(req)
@@ -780,7 +802,7 @@ class LogicOtt(object):
             logger.error(traceback.format_exc())
 
     @staticmethod
-    def plexott_movie_list(req):
+    def ott_movie_list(req):
         try:
             #logger.debug(req.form)
             ret = OttMovieItem.item_list(req)
@@ -1271,9 +1293,10 @@ class LogicOtt(object):
                 try:
                     os.remove(fpath)
                     OttShowItem.delete(entity.id)
-                    data = {'type':'success', 'msg':'파일삭제 성공({f})'.format(f=fpath)}
-                    socketio.emit("notify", data, namespace='/framework', broadcate=True)
-                    logger.debug('파일삭제완료.(%s)', fpath)
+                    if ModelSetting.get_bool('strm_notify_each'):
+                        data = {'type':'success', 'msg':'파일삭제 성공({f})'.format(f=fpath)}
+                        socketio.emit("notify", data, namespace='/framework', broadcate=True)
+                        logger.debug('파일삭제완료.(%s)', fpath)
                     return
                 except:
                     data = {'type':'warning', 'msg':'파일삭제 오류: 알수없는 오류({f})'.format(f=fpath)}
@@ -1302,6 +1325,7 @@ class LogicOtt(object):
                 return
 
             m = json.loads(entity.info)
+
             for x in ['path_plex', 'path_kodi']:
                 if x not in m: continue
                 fpath = m[x]
@@ -1312,13 +1336,15 @@ class LogicOtt(object):
 
                 try:
                     os.remove(fpath)
-                    OttMovieItem.delete(entity.id)
-                    logger.debug('파일삭제완료: type({t}):path({p})'.format(t=x, p=fpath))
-                    data = {'type':'success', 'msg':'삭제완료- {t}:{p}'.format(t=x, p=fpath)}
-                    socketio.emit("notify", data, namespace='/framework', broadcate=True)
+                    if ModelSetting.get_bool('strm_notify_each'):
+                        logger.debug('파일삭제완료: type({t}):path({p})'.format(t=x, p=fpath))
+                        data = {'type':'success', 'msg':'삭제완료- {t}:{p}'.format(t=x, p=fpath)}
+                        socketio.emit("notify", data, namespace='/framework', broadcate=True)
                 except:
                     data = {'type':'warning', 'msg':'파일삭제 오류: 알수없는 오류({f})'.format(f=fpath)}
                     socketio.emit("notify", data, namespace='/framework', broadcate=True)
+
+            OttMovieItem.delete(entity.id)
             return
         except Exception as e:
             logger.error('Exception:%s', e)
@@ -1332,7 +1358,10 @@ class LogicOtt(object):
                 logger.debug('file_remove_thread...started()')
                 req = LogicOtt.FileRemoveQueue.get()
 
-                if req['ctype'] == 'show':   # show
+                if req['ctype'] == 'notify':
+                    data = {'type':'success', 'msg':req['msg']}
+                    socketio.emit("notify", data, namespace='/framework', broadcate=True)
+                elif req['ctype'] == 'show':   # show
                     LogicOtt.remove_show_file(req['code'])
                 else:                       # movie
                     LogicOtt.remove_movie_file(req['code'])
@@ -1349,7 +1378,10 @@ class LogicOtt(object):
                 logger.debug('strm_thread_function...started()')
                 req = LogicOtt.StrmThreadQueue.get()
                 ctype = req['ctype']
-                if ctype == 'show':
+                if ctype == 'notify':
+                    data = {'type':'success', 'msg':req['msg']}
+                    socketio.emit("notify", data, namespace='/framework', broadcate=True)
+                elif ctype == 'show':
                     title = req['title']
                     ret = LogicOtt.create_show_strm(ctype, title)
                 else:# movie, popular_movie and batch
@@ -1357,9 +1389,10 @@ class LogicOtt(object):
                     code = req['code']
                     ret = LogicOtt.create_movie_strm(ctype, strm_type, code)
 
-                if ret['ret'] != 'success': data = {'type':'warning', 'msg':ret['data']}
-                else: data = {'type':'success', 'msg':ret['data']}
-                socketio.emit("notify", data, namespace='/framework', broadcate=True)
+                if ModelSetting.get_bool('strm_notify_each'):
+                    if ret['ret'] != 'success': data = {'type':'warning', 'msg':ret['msg']}
+                    else: data = {'type':'success', 'msg':ret['msg']}
+                    socketio.emit("notify", data, namespace='/framework', broadcate=True)
 
                 time.sleep(0.3)
                 LogicOtt.StrmThreadQueue.task_done()
@@ -1368,4 +1401,160 @@ class LogicOtt(object):
             except Exception as e:
                 logger.error('Exception:%s', e)
                 logger.error(traceback.format_exc())
+
+    @staticmethod
+    def scheduler_handler(req):
+        try:
+            ctype = req.form['ctype']
+            if ctype == 'show':
+                scheduler_name = 'ott_show_scheduler'
+                scheduler_func = LogicOtt.ott_show_scheduler_function
+            else:
+                scheduler_name = 'ott_movie_scheduler'
+                scheduler_func = LogicOtt.ott_movie_scheduler_function
+
+            if scheduler.is_include(scheduler_name):
+                if scheduler.is_running(scheduler_name):
+                    ret = {'ret':'error', 'msg':'{s}스케쥴러가 이미 실행 중입니다.'.format(s=scheduler_name)}
+                    return ret
+                scheduler.execute_job(scheduler_name)
+                ret = {'ret':'success', 'msg':'{s}스케쥴러 실행을 요청하였습니다.'.format(s=scheduler_name)}
+                return ret
+
+            time.sleep(1)
+            thread = threading.Thread(target=schduler_func, args=())
+            thread.setDaemon(True)
+            thread.start()
+
+            ret = {'ret':'success', 'msg':'{s}스케쥴러 함수를 실행하였습니다.'.format(s=scheduler_name)}
+            return ret
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def show_reset_handler(target, scope):
+        try:
+            targets = ['strm','db'] if target == 'all' else [target]
+            scope_map = {'onair':1, 'ended':2}
+
+            if scope == 'all': entities = OttShowItem.get_all_entities()
+            else: entities = OttShowItem.get_entities_by_status(scope_map[scope])
+
+            count = 0
+            for tg in targets:
+                for entity in entities:
+                    if tg == 'strm':
+                        qitem = {'ctype':'show', 'code':entity.code}
+                        LogicOtt.FileRemoveQueue.put(qitem)
+                        count += 1
+                    else: # db
+                        OttShowItem.delete(entity.id)
+
+            if count > 0 and ModelSetting.get_bool('strm_notify_each') == False:
+                qitem = {'ctype':'notify', 'msg':'{c}건의 파일을 삭제하였습니다.'.format(c=count)}
+                LogicOtt.FileRemoveQueue.put(qitem)
+
+            ret = {'ret':'success', 'msg':'{c}건의 항목을 삭제하였습니다.'.format(c=count)}
+            return ret
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def movie_reset_handler(target, scope):
+        try:
+            # scope : all, kodi, plex, popular: 현재는 all과 popular만 처리
+
+            if target == 'all': # movie, all, all: 파일과 DB삭제
+                entities = OttMovieItem.get_all_entities()
+                count = len(entities)
+                for entity in entities:
+                    qitem = {'ctype':'movie', 'code':entity.code}
+                    LogicOtt.FileRemoveQueue.put(qitem)
+
+                if count > 0 and ModelSetting.get_bool('strm_notify_each') == False:
+                    qitem = {'ctype':'notify', 'msg':'{c}건의 파일을 삭제하였습니다.'.format(c=count)}
+                    LogicOtt.FileRemoveQueue.put(qitem)
+
+                ret = {'ret':'success', 'msg':'{c}개의 STRM파일과 목록아이템 삭제요청완료'.format(c=count)}
+            elif target == 'db' and scope == 'popular':
+                db.session.query(OttPopularMovieItem).delete()
+                db.session.commit()
+                ret = {'ret':'success', 'msg':'인기영화DB 삭제완료'}
+            elif target == 'db' and scope == 'all':
+                db.session.query(OttMovieItem).delete()
+                db.session.commit()
+                ret = {'ret':'success', 'msg':'영화목록DB 삭제완료'}
+
+            return ret
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def reset_handler(req):
+        try:
+            ctype = req.form['ctype']
+            target = req.form['target']
+            scope = req.form['scope']
+            if ctype == 'show':
+                ret = LogicOtt.show_reset_handler(target, scope)
+            else:
+                ret = LogicOtt.movie_reset_handler(target, scope)
+
+            return ret
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def show_create_handler(target, scope):
+        try:
+            # 일단 현재는 화이트리스트 기반 생성밖에 없음
+            from .logic_whitelist import LogicWhitelist
+
+            wavve_whitelist = LogicWhitelist.wavve_get_whitelist()
+            tving_whitelist = LogicWhitelist.tving_get_whitelist()
+
+            targets = [wavve_whitelist, tving_whitelist]
+            count = 0
+            for whitelist in targets:
+                for title in whitelist:
+                    entity = OttShowItem.get_entity_by_title(title)
+                    if entity is None:
+                        qitem = {'ctype':'show', 'title':title}
+                        logger.debug('화이트리스트 항목({t})의 STRM생성요청'.format(t=title))
+                        LogicOtt.StrmThreadQueue.put(qitem)
+                        count += 1
+
+            if count > 0 and ModelSetting.get_bool('strm_notify_each') == False:
+                qitem = {'ctype':'notify', 'msg':'{c}건의 STRM 파일을 생성하였습니다.'.format(c=count)}
+                LogicOtt.StrmThreadQueue.put(qitem)
+
+            return {'ret':'success', 'msg':'{c}건의 파일생성 요청완료'.format(c=count)}
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def create_handler(req):
+        try:
+            #ctype: show, movie | target: strm | scope: whitelist, list, kodi, plex
+            ctype = req.form['ctype']
+            target = req.form['target']
+            scope = req.form['scope']
+            if ctype == 'show':
+                ret = LogicOtt.show_create_handler(target, scope)
+            else:
+                ret = {'ret':'success', 'msg':'구현전입니다.'}
+            return ret
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
 

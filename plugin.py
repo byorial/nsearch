@@ -40,11 +40,11 @@ blueprint = Blueprint(package_name, package_name, url_prefix='/%s' %  package_na
 menu = {
     'main' : [package_name, u'검색'],
     'sub' : [
-        ['search', u'검색'], ['popular', u'인기 프로그램'], ['whitelist', u'화이트리스트'], ['plexott', u'OTT관리'],['log', u'로그']
+        ['search', u'검색'], ['popular', u'인기 프로그램'], ['whitelist', u'화이트리스트'], ['ott', u'OTT관리'],['log', u'로그']
     ],
     'category' : 'vod',
     'sub2': {
-        'plexott': [
+        'ott': [
             ['setting', u'설정'], ['show_list',u'TV목록'],['movie_list', u'영화목록'],['popular_list', u'인기영화목록조회']
 
         ]
@@ -75,7 +75,7 @@ def plugin_unload():
 #########################################################
 @blueprint.route('/')
 def home():
-    return redirect('/%s/plexott' % package_name)
+    return redirect('/%s/ott' % package_name)
     #return redirect('/%s/search' % package_name)
 
 @blueprint.route('/<sub>')
@@ -90,7 +90,7 @@ def detail(sub):
             return redirect('/%s/%s/ratings' % (package_name, sub))
         elif sub == 'whitelist':
             return redirect('/%s/%s/history' % (package_name, sub))
-        elif sub == 'plexott':
+        elif sub == 'ott':
             return redirect('/%s/%s/show_list' % (package_name, sub))
         elif sub == 'log':
             return render_template('log.html', package=package_name)
@@ -147,7 +147,7 @@ def second_menu(sub, sub2):
                 arg = {}
                 arg['package_name']  = package_name
                 return render_template('%s_%s_%s.html' % (package_name, sub, sub2), arg=arg)
-        elif sub == 'plexott':
+        elif sub == 'ott':
             arg = ModelSetting.to_dict()
             arg['package_name']  = package_name
             if sub2 == 'setting':
@@ -350,13 +350,11 @@ def ajax(sub):
                     qitem['title'] = request.form['title']
                     ret =  {'ret':'success', 'data':'{} 추가요청 완료'.format(request.form['title'])}
                     LogicOtt.StrmThreadQueue.put(qitem)
-                    #ret = LogicOtt.create_show_strm(request)
                 else: #movie, popular_movie
                     qitem['code'] = request.form['code']
                     qitem['strm_type'] = request.form['type']
                     ret =  {'ret':'success', 'data':'{c}/{t} 추가요청 완료'.format(c=request.form['code'], t=request.form['type'])}
                     LogicOtt.StrmThreadQueue.put(qitem)
-                    #ret = LogicOtt.create_movie_strm(request)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -368,7 +366,8 @@ def ajax(sub):
                 ctype = request.form['ctype']
                 strm_type = request.form['type']
                 codes = request.form['code'].split(',')
-                logger.debug('code_list:{c}'.format(c=','.join(codes)))
+                #logger.debug('code_list:{c}'.format(c=','.join(codes)))
+                count = len(codes)
                 for code in codes:
                     if code == '': continue
                     qitem = {}
@@ -376,21 +375,25 @@ def ajax(sub):
                     qitem['strm_type'] = strm_type
                     qitem['code'] = code
                     LogicOtt.StrmThreadQueue.put(qitem)
-                #ret = LogicOtt.create_movie_strm_batch(request)
-                ret =  {'ret':'success', 'data':'{c}개 추가요청 완료'.format(c=len(codes))}
+
+                if count > 0 and ModelSetting.get_bool('strm_notify_each') == False:
+                    qitem = {'ctype':'notify', 'msg':'{c}건의 STRM파일을 생성하였습니다.'.format(c=count)}
+                    LogicOtt.FileRemoveQueue.put(qitem)
+
+                ret =  {'ret':'success', 'data':'{c}개 추가요청 완료'.format(c=count)}
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
                 logger.error(traceback.format_exc())
                 ret = {'ret':False, 'data':'Exception! 로그를 확인하세요'}
                 return jsonify(ret)
-        elif sub == 'plexott_list':
+        elif sub == 'ott_list':
             try:
                 ctype = request.form['ctype']
                 if ctype == 'show':
-                    ret = LogicOtt.plexott_show_list(request)
+                    ret = LogicOtt.ott_show_list(request)
                 else: #movie
-                    ret = LogicOtt.plexott_movie_list(request)
+                    ret = LogicOtt.ott_movie_list(request)
                 return jsonify(ret)
             except Exception as e:
                 logger.error('Exception:%s', e)
@@ -442,6 +445,34 @@ def ajax(sub):
                 logger.error('Exception:%s', e)
                 logger.error(traceback.format_exc())
                 ret = {'ret':'error', 'data':'Exception! 로그를 확인하세요'}
+                return jsonify(ret)
+        # OTT-설정-기타 버튼 작업 처리
+        elif sub == 'ott_manual_exec':
+            try:
+                ret = LogicOtt.scheduler_handler(request)
+                return jsonify(ret)
+            except Exception as e:
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                ret = {'ret':'error', 'msg':'Exception! 로그를 확인하세요'}
+                return jsonify(ret)
+        elif sub == 'ott_reset_exec':
+            try:
+                ret = LogicOtt.reset_handler(request)
+                return jsonify(ret)
+            except Exception as e:
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                ret = {'ret':'error', 'msg':'Exception! 로그를 확인하세요'}
+                return jsonify(ret)
+        elif sub == 'ott_create_exec':
+            try:
+                ret = LogicOtt.create_handler(request)
+                return jsonify(ret)
+            except Exception as e:
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                ret = {'ret':'error', 'msg':'Exception! 로그를 확인하세요'}
                 return jsonify(ret)
 
     except Exception as e: 

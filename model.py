@@ -363,6 +363,16 @@ class OttShowItem(db.Model):
             return None
 
     @staticmethod
+    def get_entities_by_status(status):
+        try:
+            entities = db.session.query(OttShowItem).filter_by(status=status).all()
+            return entities
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
     def get_entities_by_genre(genre):
         try:
             entities = db.session.query(OttShowItem).filter_by(genre=genre).all()
@@ -556,12 +566,22 @@ class OttMovieItem(db.Model):
                 entity = OttMovieItem(info)
                 entity.save()
                 return entity
-            return None
+            return entity
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
 
  
+    @staticmethod
+    def get_all_entities():
+        try:
+            entities = db.session.query(OttMovieItem).all()
+            return entities
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
+
     @staticmethod
     def get_entity_by_code(code):
         try:
@@ -589,6 +609,30 @@ class OttMovieItem(db.Model):
     def get_entities_by_genre(genre):
         try:
             entities = db.session.query(OttMovieItem).filter_by(genre=genre).all()
+            return entities
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
+    def get_entities_by_strm_type(strm_type):
+        try:
+            entities = db.session.query(OttMovieItem).filter_by(strm_type=strm_type).all()
+            return entities
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
+    def get_entities_by_strm_types(strm_type):
+        try:
+            if strm_type == 'all': return db.session.query(OttMovieItem).all()
+            conditions = []
+            conditions.append(OttMovieItem.strm_type == 'all')
+            conditions.append(OttMovieItem.strm_type == strm_type)
+            entities = db.session.query(OttMovieItem).filter(or_(*conditions)).all()
             return entities
         except Exception as e:
             logger.error('Exception:%s', e)

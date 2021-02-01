@@ -10,6 +10,7 @@
       {{ macros.m_tab_head2('normal', '일반', true) }}
       {{ macros.m_tab_head2('show', 'TV', false) }}
       {{ macros.m_tab_head2('movie', '영화', false) }}
+      {{ macros.m_tab_head2('etc', '기타', false) }}
     {{ macros.m_tab_head_end() }}
   </nav>
   <form id='setting' name='setting'>
@@ -18,6 +19,7 @@
     {{ macros.setting_input_text('plex_scan_delay', '스캔명령 지연시간(초)', value=arg['plex_scan_delay'], col='3', desc=['strm파일 생성후 스캔명령 전송 대기 시간(초단위)']) }}
     {{ macros.setting_input_text('plex_scan_min_limit', '스캔명령 재전송 제한시간(초)', value=arg['plex_scan_min_limit'], col='3', desc=['동일섹션에 대해 스캔명령을 재 전송할 최소 제한 시간', '10으로 설정시 10초 내에는 동일 섹션에 스캔명령을 전송하지 않음']) }}
     {{ macros.setting_checkbox('strm_overwrite', 'STRM파일덮어쓰기', value=arg['strm_overwrite'], desc='On : STRM파일이 있는 경우 덮어씀, Off: 파일이 없는 경우만 생성') }}
+    {{ macros.setting_checkbox('strm_notify_each', '파일처리건당알림', value=arg['strm_notify_each'], desc='On : STRM파일생성/삭제시 건당알림, Off: 여러건 처리시 1번만 알림') }}
     {{ macros.setting_input_int('list_page_size', '페이지당 목록 수', value=arg['list_page_size'], desc=['한 페이지에 표시할 아이템 목록','카드UI를 위해 6의 배수 입력 추천']) }}
     {{ macros.setting_input_text('plex_path_rule', 'PLEX 경로변환규칙', value=arg['plex_path_rule'], desc=['SJVA에서 구글드라이브 경로와 Plex서버상의 경로가 다를경우 사용', '형식: 로컬마운트경로|Plex 상의 경로', '예: /mnt/gdrive|P: (구글드라이브 루트가 Plex 서버에서 P:으로 매칭)']) }}
    {{ macros.m_tab_content_end() }}
@@ -39,9 +41,10 @@
   {% endif %}    
 </div>
 {{ macros.setting_bottom('On : 스케쥴링 시작','Off : 스케쥴링 중지') }}
-    {{ macros.setting_input_int('ott_show_scheduler_interval', '메타갱신 스케쥴링 실행 정보', value=arg['ott_show_scheduler_interval'], desc=['Inverval(minute 단위)이나 Cron 설정']) }}
+    {{ macros.setting_input_int('ott_show_scheduler_interval', '메타갱신 스케쥴링 실행 정보', value=arg['ott_show_scheduler_interval'], desc=['Inverval(minute 단위)']) }}
     {{ macros.setting_checkbox('ott_show_scheduler_auto_start', '시작시 자동실행', value=arg['ott_show_scheduler_auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }}
     {{ macros.setting_input_text('show_library_path', 'TV 라이브러리 경로', value=arg['show_library_path'], desc=['TV용 strm파일을 생성할 라이브러리 경로']) }}
+    {{ macros.setting_checkbox('auto_create_strm_in_whitelist', 'Whitelist 항목 자동생성', value=arg['auto_create_strm_in_whitelist'], desc='On : 최근 VOD조회시 Whitelist에 포함된 항목의 경우 자동으로 STRM파일을 생성함') }}
     {{ macros.setting_input_int('meta_update_interval', '메타갱신 SleepTime', value=arg['meta_update_interval'], desc=['메타갱신 휴식시간(초)','여러파일 메타갱신시 파일처리당 휴식시간']) }}
     {{ macros.setting_checkbox('meta_update_notify', '메타갱신개별알림', value=arg['meta_update_notify'], desc='On : 메타갱신시 파일별 알림, Off: 메타갱신 완료시 1번만 알림') }}
    {{ macros.m_tab_content_end() }}
@@ -63,7 +66,7 @@
 </div>
 {{ macros.setting_bottom('On : 스케쥴링 시작','Off : 스케쥴링 중지') }}
 <!--{{ macros.setting_global_scheduler_sub_button(arg['is_include_movie'], arg['is_running_movie']) }} -->
-    {{ macros.setting_input_int('ott_movie_scheduler_interval', '인기영화 스케쥴링 실행정보', value=arg['ott_movie_scheduler_interval'], desc=['Inverval(minute 단위)이나 Cron 설정']) }}
+    {{ macros.setting_input_int('ott_movie_scheduler_interval', '인기영화 스케쥴링 실행정보', value=arg['ott_movie_scheduler_interval'], desc=['Inverval(minute 단위)']) }}
     {{ macros.setting_checkbox('ott_movie_scheduler_auto_start', '시작시 자동실행', value=arg['ott_movie_scheduler_auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }}
     {{ macros.setting_input_int('ott_movie_page_limit', '스케쥴링시 조회할 페이지 수', value=arg['ott_movie_page_limit'], desc=['1회 검색시 조회할 페이지 수(각장르별)', '* 큰 값설정시 API를 과도하게 사용할 수 있음']) }}
     {{ macros.setting_checkbox('movie_search_only_possible', '재생가능영화만 검색', value=arg['movie_search_only_possible'], desc=['On: 재생권한이 있는 영화만 검색결과 목록표시']) }}
@@ -77,6 +80,22 @@
     {{ macros.setting_input_textarea('movie_country_rule', '생성규칙-국가별', desc=['국가분류규칙, 비어있는 경우 검사하지 않음', '\"국가,폴더명\" 형식, 여러국가 지정시 \"일본|중국|홍콩,아시아영화\"', '여러조건 입력시 구분자는 Enter, *default,fail값 설정필수, 지우지마세요'], value=arg['movie_country_rule'], row='3') }}
     {{ macros.setting_input_textarea('movie_genre_rule', '생성규칙-장르별', desc=['장르분류규칙, 비어있는 경우 검사하지 않음', '\"장르,폴더명\" 형식, 여러장르 지정시 \"공포|스릴러,공포영화\"', '여러조건 입력시 구분자는 Enter, *default,fail값 설정필수, 지우지마세요'], value=arg['movie_genre_rule'], row='3') }}
     </div>
+   {{ macros.m_tab_content_end() }}
+   {{ macros.m_tab_content_start('etc', false) }}
+     {{ macros.m_strong('TV프로그램') }}
+      {{ macros.m_hr() }}
+       {{ macros.setting_button([['show_manual_scheduler_btn','메타갱신수동실행']], left='TV스케쥴러 수동실행', desc='TV 스케쥴링에 의한 메타갱신작업을 수동으로 실행합니다.(신규에피소드확인)') }}
+       {{ macros.setting_button([['show_all_all_reset_btn','전체삭제']], left='TV전체삭제', desc='등록된 모든 TV목록과 STRM파일을 삭제합니다.') }}
+       {{ macros.setting_button([['show_db_all_reset_btn','모든목록삭제'], ['show_db_onair_reset_btn', '방영중목록삭제'], ['show_db_ended_reset_btn', '종영목록삭제']], left='TV DB목록삭제', desc='버튼유형에 따라 TV목록을 삭제합니다.(이미 생성된 STRM파일은 유지됨)') }}
+       {{ macros.setting_button([['show_strm_whitelist_create_btn','화이트리스트 STRM 생성']], left='STRM 일괄(재)생성', desc='화이트리스트에 등록된 모든 프로그램의 STRM파일을 생성합니다.(STRM파일이 없는경우만 생성)') }}
+     {{ macros.m_strong('영화') }}
+      {{ macros.m_hr() }}
+       {{ macros.setting_button([['movie_all_all_reset_btn','전체삭제']], left='영화전체삭제', desc='모든 영화목록과 STRM파일을 삭제합니다.') }}
+       {{ macros.setting_button([['movie_db_all_reset_btn','영화목록전체']], left='영화DB목록삭제', desc='등록된 모든 영화목록을 삭제합니다.(이미 생성된 STRM파일은 유지됨)') }}
+     {{ macros.m_strong('인기영화목록') }}
+      {{ macros.m_hr() }}
+       {{ macros.setting_button([['movie_manual_scheduler_btn','인기영화목록갱신']], left='영화목록조회 수동실행', desc='스케쥴링에 의한 인기영화목록 갱신작업을 수동으로 실행합니다.') }}
+       {{ macros.setting_button([['movie_db_popular_reset_btn','DB 삭제']], left='인기영화DB목록삭제', desc='등록된 모든 영화목록을 삭제합니다.') }}
    {{ macros.m_tab_content_end() }}
   </div><!--tab-content-->
   </form>
@@ -93,6 +112,106 @@ $(document).ready(function(){
 $('#movie_auto_classfy').change(function() {
   use_collapse('movie_auto_classfy');
 });
+
+$("body").on('click', '#show_manual_scheduler_btn,#movie_manual_scheduler_btn', function(e){
+  e.preventDefault();
+  btn_id = $(this).attr('id');
+  if (btn_id == 'show_manual_scheduler_btn') {
+    ctype = 'show';
+    tmp = 'TV메타갱신';
+  } else {
+    ctype = 'movie';
+    tmp = '인기영화목록갱신';
+  }
+  document.getElementById("confirm_title").innerHTML = "확인";
+  document.getElementById("confirm_body").innerHTML = '<strong>'+tmp+'</strong> 스케쥴러를 수동으로 실행합니다.';
+  $('#confirm_button').attr('onclick', "manual_exec(ctype);");
+  $("#confirm_modal").modal();
+  return;
+});
+
+function manual_exec(ctype) {
+  $.ajax({
+    url: '/' + package_name + '/ajax/ott_manual_exec',
+    type: "POST", 
+    cache: false,
+    data: {ctype:ctype},
+    dataType: "json",
+    success: function (data) {
+      if ( data.ret == 'success') {
+        $.notify('<strong>성공: '+data.msg+'</strong>', {type: 'success'});
+      } else {
+        $.notify('<strong>실패: ' +data.msg+ '</strong>', {type: 'warning'});
+      }
+    }
+  });
+}
+
+
+$("body").on('click', '#show_all_all_reset_btn,#show_db_all_reset_btn,#show_db_ended_reset_btn,#show_db_onair_reset_btn,#movie_all_all_reset_btn,#movie_db_all_reset_btn,#movie_db_popular_reset_btn', function(e){
+  e.preventDefault();
+  btn_id = $(this).attr('id');
+  var arr = btn_id.split('_', 3);
+  ctype  = arr[0];
+  target = arr[1];
+  scope  = arr[2];
+  document.getElementById("confirm_title").innerHTML = "확인";
+  document.getElementById("confirm_body").innerHTML = '<strong>'+ctype+'의 대상('+target+'/'+scope+')</strong>을 삭제합니다. <br>이작업은 되돌릴 수 없습니다.';
+  $('#confirm_button').attr('onclick', "reset_exec(ctype, target, scope);");
+  $("#confirm_modal").modal();
+  return;
+});
+
+// ctype: show, move	target: all, db, strm	scope: all, (onair, ended), (plex, kodi), popular
+function reset_exec(ctype, target, scope) {
+  $.ajax({
+    url: '/' + package_name + '/ajax/ott_reset_exec',
+    type: "POST", 
+    cache: false,
+    data: {ctype:ctype, target:target, scope:scope},
+    dataType: "json",
+    success: function (data) {
+      if ( data.ret == 'success') {
+        $.notify('<strong>성공: '+data.msg+'</strong>', {type: 'success'});
+      } else {
+        $.notify('<strong>실패: ' +data.msg+ '</strong>', {type: 'warning'});
+      }
+    }
+  });
+}
+
+
+$("body").on('click', '#show_strm_whitelist_create_btn', function(e){
+  e.preventDefault();
+  btn_id = $(this).attr('id');
+  var arr = btn_id.split('_', 3);
+  ctype  = arr[0];
+  target = arr[1];
+  scope  = arr[2];
+  document.getElementById("confirm_title").innerHTML = "확인";
+  document.getElementById("confirm_body").innerHTML = '<strong>'+ctype+'의 대상('+target+'/'+scope+')</strong>의 STRM파일을 생성합니다. <br>파일이 존재하는 경우 생성하지 않습니다.';
+  $('#confirm_button').attr('onclick', "create_exec(ctype, target, scope);");
+  $("#confirm_modal").modal();
+  return;
+});
+
+// ctype: show, movie	target: strm	scope: whitelist, list, kodi, plex
+function create_exec(ctype, target, scope) {
+  $.ajax({
+    url: '/' + package_name + '/ajax/ott_create_exec',
+    type: "POST", 
+    cache: false,
+    data: {ctype:ctype, target:target, scope:scope},
+    dataType: "json",
+    success: function (data) {
+      if ( data.ret == 'success') {
+        $.notify('<strong>성공: '+data.msg+'</strong>', {type: 'success'});
+      } else {
+        $.notify('<strong>실패: ' +data.msg+ '</strong>', {type: 'warning'});
+      }
+    }
+  });
+}
 
 
 // 사용 on / off

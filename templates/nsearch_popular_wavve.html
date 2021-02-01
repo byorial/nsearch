@@ -146,6 +146,7 @@ function wavve_make_album(ret, target){
     str += '<div class="btn-group">';
     str += '<button id="wavve_program_basic_analyze" name="submit" type="button" class="btn btn-sm btn-outline-secondary" data-code="'+data[i].programid+'">분석</button>';
     str += '<button id="wavve_whitelist_program_btn" name="submit" type="button" class="btn btn-sm btn-outline-secondary" data-program="'+data[i].programtitle+'">추가</button>';
+    str += '<button id="strm_create_btn" name="submit" type="button" class="btn btn-sm btn-outline-info" data-provider="W" data-program="'+data[i].programtitle+'">S</button>';
     str += '</div>';
     str += '</div>';
     str += '</div>';
@@ -157,7 +158,6 @@ function wavve_make_album(ret, target){
   document.getElementById(target).innerHTML = str;
 }
 
-<<<<<<< HEAD
 function wavve_make_album_cf(ret, target){
   data = ret.data.cell_toplist.celllist;
   str = '';
@@ -182,7 +182,7 @@ function wavve_make_album_cf(ret, target){
     str += '<div class="btn-group">';
     str += '<button id="wavve_program_basic_analyze" name="submit" type="button" class="btn btn-sm btn-outline-secondary" data-code="'+episode_code+'">분석</button>';
     str += '<button id="wavve_whitelist_program_btn" name="submit" type="button" class="btn btn-sm btn-outline-secondary" data-program="'+program_name+'">추가</button>';
-    str += '<button id="strm_create_btn" name="submit" type="button" class="btn btn-sm btn-outline-info" data-program="'+program_name+'">S</button>';
+    str += '<button id="strm_create_btn" name="submit" type="button" class="btn btn-sm btn-outline-info" data-provider="W" data-program="'+program_name+'">S</button>';
     str += '</div>';
     str += '</div>';
     str += '</div>';

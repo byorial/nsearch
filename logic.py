@@ -39,7 +39,7 @@ class Logic(object):
         'auto_tving_whitelist_limit' : '20',
         'auto_tving_except_channel' : '',
         'auto_tving_except_program' : '',
-        # 'auto_tving_order' : 'viewDay',
+        'auto_tving_order' : 'viewDay',
         'auto_priority' : '0',
         'auto_delete' : 'False',
         'auto_download' : 'False',
@@ -52,6 +52,7 @@ class Logic(object):
         'list_page_size' : '30',
         'plex_path_rule' : u'',
         'strm_overwrite' : 'False',
+        'strm_notify_each' : 'False',
 
         # TV-OTT
         'ott_show_scheduler_auto_start' : 'False',
@@ -59,6 +60,7 @@ class Logic(object):
         'show_library_path' : u'/mnt/gdrive/OTT/TV',
         'meta_update_interval' : '1',
         'meta_update_notify' : 'False',
+        'auto_create_strm_in_whitelist': 'False',
 
         # MOVIE-OTT
         'ott_movie_scheduler_auto_start' : 'False', 
