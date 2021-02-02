@@ -341,7 +341,7 @@ class OttShowItem(db.Model):
     @staticmethod
     def get_info_by_code(code):
         try:
-            entity = db.session.query(OttShowItem).filter_by(code=code).with_for_update().first()
+            entity = OttShowItem.get_entity_by_code(code)
             if entity != None:
                 return json.loads(entity.info)
 

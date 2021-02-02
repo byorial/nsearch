@@ -161,7 +161,7 @@ $("body").on('click', '#partial_meta_refresh_btn', function(e){
   str = '';
   for (i in data) {
     if (data[i].status == 1) {
-      str += data[i].title;
+      str += data[i].code;
     }
     if (i != data.length) {
       str += ',';
@@ -241,7 +241,7 @@ function make_list(data) {
     if (data[i].status == 1) {
     	var broadcast_info = data[i].broadcast_info;
         if (broadcast_info != null && broadcast_info != '') {
-	    var wdays = broadcast_info.wdays;
+            var wdays = broadcast_info.wdays;
             tmp += '&nbsp;&nbsp;방송요일: ';
 	    for (j in wdays) {
 	        tmp += wdays[j] + '&nbsp;';
@@ -271,41 +271,43 @@ function make_album(data) {
     str += '<div class="col-md-2 col-sm-4 col-6">';
     str += '<div class="card mb-2 box-shadow">';
     str += '<img class="card-img-top" src="'+data[i].poster_url+'" class="img-fluid img-thumbnail">';
-    str += '<div class="card-body">';
+    str += '<div class="card-body" style="padding:2px 1px 2px 1px;">';
     str += '<p class="card-text">';
     str += '<strong>' + data[i].title + '</strong><br>';
     str += '<small class="text-muted">';
     if (data[i].status == 1) {
-      str += '(방영중/' +data[i].genre+ ')<br>';
+      str += '(방영중/' +data[i].genre+ ')&nbsp;/&nbsp;';
     } else if (data[i].status == 2) {
-      str += '(종영/' +data[i].genre+ ')<br>';
+      str += '(종영/' +data[i].genre+ ')&nbsp;/&nbsp;';
     } else if (data[i].status == 0) {
-      str += '(방영예정/' +data[i].genre+ ')<br>';
+      str += '(방영예정/' +data[i].genre+ ')&nbsp;/&nbsp;';
     } else {
-      str += '&nbsp;-<br>';
+      str += '&nbsp;-';
     }
     if (data[i].status == 1) {
-    	var broadcast_info = data[i].broadcast_info;
-        if (broadcast_info != null && broadcast_info != '') {
-	    var wdays = broadcast_info.wdays;
-	    for (j in wdays) {
-	        str += wdays[j] + '&nbsp;';
-	    }
-	    str += '/&nbsp;';
-            str += ("00" + broadcast_info.hour).slice(-2) + ':' + ("00" + broadcast_info.min).slice(-2) + '<br>';
+    	var wday = data[i].wday;
+	widx = new Array(64, 32, 16, 8, 4, 2, 1)
+	wstr = new Array('월', '화', '수', '목', '금', '토', '일')
+	for (j in widx) {
+          if ((wday & widx[j]) == widx[j]) {
+	    str += wstr[j] + '&nbsp;';
+	  }
+	  //str += '/&nbsp;';
+          //str += ("00" + broadcast_info.hour).slice(-2) + ':' + ("00" + broadcast_info.min).slice(-2) + '<br>';
         }
+        str += '<br>';
     }
     else {
       str += '<br>';
     }
     str += '</small>';
     str += '</p>';
-    str += '<div class="d-flex justify-content-between align-items-center">';
-    tmp = m_button2('meta_refresh_btn', '갱신', [{'key':'code', 'value':data[i].code}], 'info');
+    str += '<div class="d-flex justify-content-between align-items-center" style="padding:2px 1px 2px 1px;">';
+    tmp = m_button('show_info_btn', '정보', [{'key':'code', 'value':data[i].code}]);
+    tmp += m_button2('meta_refresh_btn', '갱신', [{'key':'code', 'value':data[i].code}], 'info');
     tmp += m_button2('file_remove_btn', '삭제', [{'key':'code', 'value':data[i].code}], 'danger');
     btn_str = m_button_group(tmp);
     str += btn_str;
-    
     str += '<small class="text-muted"></small>';
     str += '</div>';
     str += '</div>';
@@ -315,6 +317,16 @@ function make_album(data) {
   str += m_row_end();
   document.getElementById("list_div").innerHTML = str;
 }
+
+$("body").on('click', '#show_info_btn', function(e){
+  e.preventDefault();
+  code = $(this).data('code');
+  for (i in current_data) {
+    if (current_data[i].code == code) {
+      m_modal(current_data[i]);
+    }
+  }
+});
 
 $("body").on('click', '#all_btn', function(e){
   e.preventDefault();

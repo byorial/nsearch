@@ -160,6 +160,22 @@ class LogicOtt(object):
 
 
     @staticmethod
+    def refresh_movie_info_map(code, site):
+        try:
+            from lib_metadata import SiteWavveMovie
+            from lib_metadata import SiteTvingMovie
+
+            cls = SiteWavveMovie if site == 'wavve' else SiteTvingMovie
+            r = cls.info(code)
+            if r['ret'] == "success":
+                return LogicOtt.movie_info_map(r['data'])
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return False
+
+    @staticmethod
     def get_recent_wavve_list():
         try:
             wavve_list = []
@@ -343,9 +359,10 @@ class LogicOtt(object):
         logger.debug('Thread started:do_movie_strm_proc(): type: %s, path:%s', strm_type, target_path)
 
         if info == None:
-            info = OttPopularMovieItem.get_info_by_code(code)
+            info = LogicOtt.get_movie_info_from_cache(code)
             if info == None:
-                info = LogicOtt.get_movie_info_from_cache(code)
+                info = OttPopularMovieItem.get_info_by_code(code)
+                if info: info = LogicOtt.refresh_movie_info_map(info['code'], info['site'])
 
         #logger.debug(json.dumps(info, indent=2))
         if info is None:
@@ -863,6 +880,7 @@ class LogicOtt(object):
 
             if 'list' not in req.form: req_type = 'all'
             else: code_list = req.form['list'].split(u',')
+            code_list = Util.get_list_except_empty(code_list)
 
             #show_list = LogicOtt.OttShowList[:]
             target_list = []
@@ -891,10 +909,12 @@ class LogicOtt(object):
 
     @staticmethod
     def movie_info_map(info):
+        import framework.wavve.api as Wavve
+
+        #play_url = 'plugin://metadata.sjva.movie/?action=play&code={code}'.format(code=info['code'])
         streams = ['wavve_stream', 'tving_stream']
         m = {}
         m['code'] = info['code']
-        play_url = 'plugin://metadata.sjva.movie/?action=play&code={code}'.format(code=info['code'])
         m['site'] = info['site']
         m['title'] = info['title']
         m['year'] = info['year'] if info['year'] != 1900 else int(info['premiered'][:4])
@@ -922,12 +942,10 @@ class LogicOtt(object):
                 m['drm'] = info['extra_info'][stream]['drm']
                 if 'plex' in info['extra_info'][stream]:
                     m['plex_url'] = info['extra_info'][stream]['plex'] 
-                    #m['plex_url'] = py_urllib.quote(play_url)
                 if 'plex2' in info['extra_info'][stream]:
-                    m['plex_url'] = info['extra_info'][stream]['plex2'] 
+                    m['plex2_url'] = info['extra_info'][stream]['plex2']
                 if 'kodi' in info['extra_info'][stream]:
                     m['kodi_url'] = info['extra_info'][stream]['kodi'] 
-                    #m['kodi_url'] = py_urllib.quote(play_url)
                 m['permission'] = True
                 break
 
