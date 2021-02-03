@@ -616,6 +616,16 @@ class OttMovieItem(db.Model):
             return None
 
     @staticmethod
+    def get_entities_by_country(country):
+        try:
+            entities = db.session.query(OttMovieItem).filter_by(country=country).all()
+            return entities
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
     def get_entities_by_strm_type(strm_type):
         try:
             entities = db.session.query(OttMovieItem).filter_by(strm_type=strm_type).all()
