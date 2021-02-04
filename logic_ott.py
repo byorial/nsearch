@@ -910,6 +910,7 @@ class LogicOtt(object):
     @staticmethod
     def movie_info_map(info):
         import framework.wavve.api as Wavve
+        from lib_metadata.site_tving import product_country_map
 
         #play_url = 'plugin://metadata.sjva.movie/?action=play&code={code}'.format(code=info['code'])
         streams = ['wavve_stream', 'tving_stream']
@@ -925,6 +926,7 @@ class LogicOtt(object):
         m['genre'] = info['genre'][0] if len(info['genre']) > 0 else u'기타'
         m['mpaa'] = info['mpaa']
         m['country'] = info['country'][0] if len(info['country']) > 0 else u'기타국가'
+        if m['country'] in product_country_map: m['country'] = product_country_map[m['country']]
         m['runtime'] = info['runtime']
         m['title_en'] = info['extra_info']['title_en']
         m['director'] = u', '.join(info['director'])
