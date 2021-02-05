@@ -1038,6 +1038,8 @@ class LogicOtt(object):
     def movie_search_popular_tving(genre, max_page):
         try:
             import framework.tving.api as Tving
+            from lib_metadata.site_tving import product_country_map
+
             poster = 'CAIM2100'
             tlist = []
             for i in range(max_page):
