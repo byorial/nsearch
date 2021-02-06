@@ -669,7 +669,13 @@ class LogicOtt(object):
             wdays = []
 
             #logger.debug('broadcast_str: %s', broadcast_str)
-            match = re.compile(rx).search(broadcast_str.encode('utf-8'))
+            # for shield
+            if type(broadcast_str) == bytes or type(broadcast_str) == bytearray:
+                broadcast_str = broadcast_str.decode('utf-8')
+            else:
+                broadcast_str = broadcast_str.encode('utf-8')
+            match = re.compile(rx).search(broadcast_str)
+            #match = re.compile(rx).search(broadcast_str.encode('utf-8'))
             #logger.debug(match)
             if match:
                 wday = match.group('wday')
