@@ -180,18 +180,22 @@ class LogicOtt(object):
         try:
             wavve_list = []
             import framework.wavve.api as Wavve
-            try: vod_list = Wavve.vod_newcontents(page=1)['list']
-            except TypeError: vod_list = []
-            for vod in vod_list:
-                item = dict()
-                item['title'] = LogicOtt.change_text_for_use_filename(vod['programtitle'])
-                item['code'] = vod['programid']
-                item['channel'] = vod['channelname']
-                item['episode'] = vod['episodenumber']
-                item['qvod'] = True if vod['episodetitle'].find('Quick VOD') != -1 else False
+            page_limit = ModelSetting.get_int('ott_show_recent_page_limit')
+            page = 1
 
-                #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
-                wavve_list.append(item)
+            for i in range(page_limit):
+                try: vod_list = Wavve.vod_newcontents(page=i+1)['list']
+                except TypeError: vod_list = []
+                for vod in vod_list:
+                    item = dict()
+                    item['title'] = LogicOtt.change_text_for_use_filename(vod['programtitle'])
+                    item['code'] = vod['programid']
+                    item['channel'] = vod['channelname']
+                    item['episode'] = vod['episodenumber']
+                    item['qvod'] = True if vod['episodetitle'].find('Quick VOD') != -1 else False
+
+                    #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
+                    if item not in wavve_list: wavve_list.append(item)
 
             logger.debug('[schedule] wavve: recent count: {n}'.format(n=len(wavve_list)))
 
@@ -220,22 +224,27 @@ class LogicOtt(object):
             import framework.tving.api as Tving
             from tving.basic import TvingBasic
             from tving.model import Episode
-            vod_list = Tving.get_vod_list(page=1)['body']['result']
-            for vod in vod_list:
-                episode = Episode('auto')
-                json_data, url = TvingBasic.get_episode_json(vod['episode']['code'], 'FHD')
-                episode = TvingBasic.make_episode_by_json(episode, json_data, url)
-                quick_vod = True if url.find('quick_vod') != -1 else False
 
-                item = dict()
-                item['title'] = LogicOtt.change_text_for_use_filename(vod['program']['name']['ko'])
-                item['code'] = vod['program']['code']
-                item['channel'] = vod['channel']['name']['ko']
-                item['episode'] = vod['episode']['frequency']
-                item['qvod'] = quick_vod
+            page = 1
+            page_limit = ModelSetting.get_int('ott_show_recent_page_limit')
 
-                #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
-                tving_list.append(item)
+            for i in range(page_limit):
+                vod_list = Tving.get_vod_list(page=i+1)['body']['result']
+                for vod in vod_list:
+                    episode = Episode('auto')
+                    json_data, url = TvingBasic.get_episode_json(vod['episode']['code'], 'FHD')
+                    episode = TvingBasic.make_episode_by_json(episode, json_data, url)
+                    quick_vod = True if url.find('quick_vod') != -1 else False
+
+                    item = dict()
+                    item['title'] = LogicOtt.change_text_for_use_filename(vod['program']['name']['ko'])
+                    item['code'] = vod['program']['code']
+                    item['channel'] = vod['channel']['name']['ko']
+                    item['episode'] = vod['episode']['frequency']
+                    item['qvod'] = quick_vod
+
+                    #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
+                    tving_list.append(item)
 
             logger.debug('[schedule] tving: recent count: {n}'.format(n=len(tving_list)))
 

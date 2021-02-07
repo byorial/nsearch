@@ -45,6 +45,7 @@
     {{ macros.setting_checkbox('ott_show_scheduler_auto_start', '시작시 자동실행', value=arg['ott_show_scheduler_auto_start'], desc='On : 시작시 자동으로 스케쥴러에 등록됩니다.') }}
     {{ macros.setting_input_text('show_library_path', 'TV 라이브러리 경로', value=arg['show_library_path'], desc=['TV용 strm파일을 생성할 라이브러리 경로']) }}
     {{ macros.setting_checkbox('auto_create_strm_in_whitelist', 'Whitelist 항목 자동생성', value=arg['auto_create_strm_in_whitelist'], desc='On : 최근 VOD조회시 Whitelist에 포함된 항목의 경우 자동으로 STRM파일을 생성함') }}
+    {{ macros.setting_input_int('ott_show_recent_page_limit', '최근VOD페이지수', value=arg['ott_show_recent_page_limit'], desc=['스케쥴링시 조회할 최근 페이지 수']) }}
     {{ macros.setting_input_int('meta_update_interval', '메타갱신 SleepTime', value=arg['meta_update_interval'], desc=['메타갱신 휴식시간(초)','여러파일 메타갱신시 파일처리당 휴식시간']) }}
     {{ macros.setting_checkbox('meta_update_notify', '메타갱신개별알림', value=arg['meta_update_notify'], desc='On : 메타갱신시 파일별 알림, Off: 메타갱신 완료시 1번만 알림') }}
    {{ macros.m_tab_content_end() }}
