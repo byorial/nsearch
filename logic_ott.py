@@ -561,12 +561,12 @@ class LogicOtt(object):
 
             # 신규추가
             item = {}
-            item['title'] = unicode(daum_info['title'])
+            item['title'] = py_unicode(daum_info['title'])
             item['status'] = daum_info['status']
-            item['code'] = unicode(daum_info['code'])
+            item['code'] = py_unicode(daum_info['code'])
             item['poster_url'] = daum_info['poster_url']
-            item['genre'] = unicode(daum_info['genre'])
-            item['site'] = unicode(daum_info['site']) if u'site' in daum_info else u''
+            item['genre'] = py_unicode(daum_info['genre'])
+            item['site'] = py_unicode(daum_info['site']) if u'site' in daum_info else u''
             item['file_path'] = fpath
             item['plex_path'] = LogicOtt.get_plex_path(fpath)
             item['strm_type'] = u'plex' #TODO
@@ -689,7 +689,7 @@ class LogicOtt(object):
                     wdays = wd[wd.index(tmp[0].strip()):wd.index(tmp[1].strip())+1]
                 else: # 월, 화, 수.. 형태
                     for w in wday.split(','):
-                        wdays.append(unicode(w.strip()))
+                        wdays.append(py_unicode(w.strip()))
                 # 시간: 24시간 형태로 변경
                 if match.group('ampm') == '오후':
                     tm_hour += 12
