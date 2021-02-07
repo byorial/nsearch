@@ -887,8 +887,9 @@ class LogicOtt(object):
             req_type = None
 
             if 'list' not in req.form: req_type = 'all'
-            else: code_list = req.form['list'].split(u',')
-            code_list = Util.get_list_except_empty(code_list)
+            else: 
+                code_list = req.form['list'].split(u',')
+                code_list = Util.get_list_except_empty(code_list)
 
             #show_list = LogicOtt.OttShowList[:]
             target_list = []
