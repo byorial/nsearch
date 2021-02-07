@@ -674,8 +674,8 @@ class LogicOtt(object):
                 match = re.compile(rx).search(broadcast_str.encode('utf-8'))
             except TypeError as e:
                 logger.error('TypeError: %s, try to decode for shield', e)
-                broadcast_str = broadcast_str.decode('utf-8')
-                match = re.compile(rx).search(broadcast_str)
+                rx = rx.decode('utf-8')
+                match = re.compile(rx).search(broadcast_str.encode('utf-8'))
 
             #match = re.compile(rx).search(broadcast_str.encode('utf-8'))
             #logger.debug(match)
