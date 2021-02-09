@@ -231,20 +231,24 @@ class LogicOtt(object):
             for i in range(page_limit):
                 vod_list = Tving.get_vod_list(page=i+1)['body']['result']
                 for vod in vod_list:
-                    episode = Episode('auto')
-                    json_data, url = TvingBasic.get_episode_json(vod['episode']['code'], 'FHD')
-                    episode = TvingBasic.make_episode_by_json(episode, json_data, url)
-                    quick_vod = True if url.find('quick_vod') != -1 else False
+                    try:
+                        json_data, url = TvingBasic.get_episode_json(vod['episode']['code'], 'FHD')
+                        #episode = Episode('auto')
+                        #episode = TvingBasic.make_episode_by_json(episode, json_data, url)
+                        quick_vod = True if url.find('quick_vod') != -1 else False
 
-                    item = dict()
-                    item['title'] = LogicOtt.change_text_for_use_filename(vod['program']['name']['ko'])
-                    item['code'] = vod['program']['code']
-                    item['channel'] = vod['channel']['name']['ko']
-                    item['episode'] = vod['episode']['frequency']
-                    item['qvod'] = quick_vod
+                        item = dict()
+                        item['title'] = LogicOtt.change_text_for_use_filename(vod['program']['name']['ko'])
+                        item['code'] = vod['program']['code']
+                        item['channel'] = vod['channel']['name']['ko']
+                        item['episode'] = vod['episode']['frequency']
+                        item['qvod'] = quick_vod
 
-                    #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
-                    tving_list.append(item)
+                        #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
+                        tving_list.append(item)
+                    except:
+                        logger.error('skip: failed to get tving recent-vod:%s', vod['episode']['code'])
+                        continue
 
             logger.debug('[schedule] tving: recent count: {n}'.format(n=len(tving_list)))
 
@@ -264,6 +268,7 @@ class LogicOtt(object):
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
+            return []
 
     @staticmethod
     def get_recent_vod_list():
