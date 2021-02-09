@@ -215,6 +215,7 @@ class LogicOtt(object):
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
+            return []
 
     @staticmethod
     def get_recent_tving_list():
