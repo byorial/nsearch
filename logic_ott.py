@@ -910,7 +910,7 @@ class LogicOtt(object):
             target_list = []
 
             if req_type == 'all':
-                target_list = [info for info in OttShowItem.get_all_info()]
+                target_list = [info for info in OttShowItem.get_all_infos()]
             else:
                 for code in code_list:
                     info = OttShowItem.get_info_by_code(code)
