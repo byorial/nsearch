@@ -859,7 +859,13 @@ class LogicOtt(object):
             count = 0
             for item in tlist:
                 logger.debug('메타데이터갱신: %s', item['plex_path'])
-                plex.LogicNormal.metadata_refresh(item['plex_path'])
+                ret = plex.LogicNormal.metadata_refresh(item['plex_path'])
+                if ret == False:
+                    logger.error('메타데이터갱신실패: %s', item['plex_path'])
+                    data = {'type':'warning', 'msg':'메타데이터 갱신실패({t})'.format(t=item['title'])}
+                    socketio.emit("notify", data, namespace='/framework', broadcate=True)
+                    continue
+
                 count += 1
 
                 logger.debug('Daum 정보 조회 및 갱신: %s', item['title'])
