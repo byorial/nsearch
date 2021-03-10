@@ -773,11 +773,11 @@ class LogicOtt(object):
             info = ret['data']
 
             daum_info['title'] = info['title']
-            daum_info['code'] = info['code'] if 'code' in info.keys() else ''
+            daum_info['code'] = info['code'] if 'code' in info else ''
             # 1: 방송중, 2: 종영, 0: 방송예정
-            daum_info['status'] = info['status'] if 'status' in info.keys() else -1
-            daum_info['poster_url'] = info['image_url'] if 'image_url' in info.keys() else ''
-            daum_info['genre'] = info['genre'] if 'genre' in info.keys() else ''
+            daum_info['status'] = info['status'] if 'status' in info else 0
+            daum_info['poster_url'] = info['image_url'] if 'image_url' in info else ''
+            daum_info['genre'] = info['genre'] if 'genre' in info else ''
 
             tmpinfo = info['broadcast_info'] if 'broadcast_info' in info.keys() else ''
             #logger.debug('broadcast_info')
