@@ -300,7 +300,9 @@ class LogicOtt(object):
                 new_list = tving_list[:]
             else:
                 for item in tving_list:
-                    if LogicOtt.check_prev_recent_vod_refreshed(item['site'], item['code']): item['refreshed'] = True 
+                    if LogicOtt.check_prev_recent_vod_refreshed(item['site'], item['code']):
+                        item['refreshed'] = True 
+                        logger.debug('already refreshed program(%s:%s:%s)', item['title'], item['episode'], item['site'])
                     else: new_list.append(item)
 
             if len(new_list) > 0:
