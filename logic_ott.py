@@ -939,9 +939,10 @@ class LogicOtt(object):
                 if item['status'] != daum_info['status']:
                     logger.debug('방영정보가 변경되어 파일갱신: %s', item['file_path'])
                     #LogicOtt.write_show_strm(item['file_path'], daum_info)
-                    item.status = daum_info['status']
+                    item['status'] = daum_info['status']
                     entity = OttShowItem.get_entity_by_code(item['code'])
-                    entity.status = item.status
+                    entity.status = item['status']
+                    entity.info = py_unicode(json.dumps(item))
                     entity.save()
 
                 if ModelSetting.get_bool('meta_update_notify'):
