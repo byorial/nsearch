@@ -110,7 +110,10 @@ class LogicOtt(object):
                 entity = OttShowItem.get_entity_by_program_id(program_id)
                 if entity != None:
                     if entity.status == 1: 
-                        target_list.append(json.loads(entity.info))
+                        info = json.loads(entity.info)
+                        info['site'] = recent['site']
+                        info['episode'] = recent['episode']
+                        target_list.append(info)
                 """
                 for item in LogicOtt.OttShowList:
                     #logger.debug('title r({r}),m({m})'.format(r=recent['title'],m=item['title']))
@@ -1594,7 +1597,6 @@ class LogicOtt(object):
                 if entity.program_id == None or entity.program_id == u'' or entity.site == u'':
                     program_id = LogicOtt.get_ott_show_program_id(entity.title)
                     info = json.loads(entity.info)
-                    info['site'] = 'wavve' if program_id[1] == 'W' else 'tving'
                     info['program_id'] = program_id[2:]
                     entity.info = py_unicode(json.dumps(info))
                     count = count + 1
