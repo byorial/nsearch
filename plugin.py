@@ -474,6 +474,15 @@ def ajax(sub):
                 logger.error(traceback.format_exc())
                 ret = {'ret':'error', 'msg':'Exception! 로그를 확인하세요'}
                 return jsonify(ret)
+        elif sub == 'show_onair_refresh':
+            try:
+                ret = LogicOtt.show_onair_refresh()
+                return jsonify(ret)
+            except Exception as e:
+                logger.error('Exception:%s', e)
+                logger.error(traceback.format_exc())
+                ret = {'ret':'error', 'msg':'Exception! 로그를 확인하세요'}
+                return jsonify(ret)
 
     except Exception as e: 
         logger.error('Exception:%s', e)

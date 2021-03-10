@@ -100,10 +100,47 @@ class Logic(object):
             logger.error(traceback.format_exc())
 
     @staticmethod
+    def db_migration():
+        try:
+            import sqlite3
+            import platform
+            db_path = os.path.join(path_data, 'db', '%s.db' % package_name)
+            table_name = '%s_show_item' % package_name
+
+            if platform.system() is 'Linux':
+                # connect to read only for Linux
+                fd = os.open(db_path, os.O_RDWR)
+                conn = sqlite3.connect('/dev/fd/%d' % fd)
+                os.close(fd)
+            else:
+                conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            q = 'PRAGMA table_info("{table_name}")'.format(table_name=table_name)
+
+            alter_program_id = True
+            for row in cur.execute(q).fetchall():
+                if row[1] == 'program_id': alter_program_id = False
+            if alter_program_id == False:
+                conn.close()
+                return
+            if alter_program_id:
+                query = 'ALTER TABLE {table_name} ADD COLUMN program_id VARCHAR'.format(table_name=table_name)
+                cur.execute(query)
+                conn.commit()
+                conn.close()
+                logger.info('ModelShowItem Alterred(column: program_id)')
+                LogicOtt.show_onair_refresh()
+
+        except Exception as e: 
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
     def plugin_load():
         try:
             logger.debug('%s plugin_load', package_name)
             Logic.db_init()
+            Logic.db_migration()
 
             if ModelSetting.get('auto_start') == 'True':
                 Logic.scheduler_start()

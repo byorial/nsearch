@@ -264,6 +264,7 @@ class OttShowItem(db.Model):
     strm_type = db.Column(db.String)
     info = db.Column(db.JSON)
     updated_time = db.Column(db.DateTime)
+    program_id = db.Column(db.String)
 
     def __init__(self, info):
         self.created_time = datetime.now()
@@ -274,6 +275,7 @@ class OttShowItem(db.Model):
         self.wday = info['wday']
         self.status = info['status']
         self.strm_type = info['strm_type']
+        self.program_id = info['program_id']
         self.info = py_unicode(json.dumps(info))
         self.updated_time = datetime.now()
 
@@ -305,6 +307,7 @@ class OttShowItem(db.Model):
             entry.wday = d['wday']
             entry.status = d['status']
             entry.strm_type = py_unicode(d['strm_type'])
+            entry.program_id = py_unicode(d['program_id'])
             entry.info = py_unicode(json.dumps(d))
 
             db.session.add(entity)
@@ -332,6 +335,16 @@ class OttShowItem(db.Model):
     def get_entity_by_code(code):
         try:
             entity = db.session.query(OttShowItem).filter_by(code=code).with_for_update().first()
+            return entity
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
+    def get_entity_by_program_id(program_id):
+        try:
+            entity = db.session.query(OttShowItem).filter_by(program_id=program_id).with_for_update().first()
             return entity
         except Exception as e:
             logger.error('Exception:%s', e)

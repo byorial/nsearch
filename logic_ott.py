@@ -104,8 +104,10 @@ class LogicOtt(object):
 
             for recent in recent_list:
                 title = LogicOtt.change_text_for_use_filename(recent['title'])
+                program_id = recent['code']
 
-                entity = OttShowItem.get_entity_by_title(title)
+                #entity = OttShowItem.get_entity_by_title(title)
+                entity = OttShowItem.get_entity_by_program_id(program_id)
                 if entity != None:
                     if entity.status == 1: 
                         target_list.append(json.loads(entity.info))
@@ -176,6 +178,37 @@ class LogicOtt(object):
             return False
 
     @staticmethod
+    def check_prev_recent_vod_refreshed(site, code):
+        try:
+            if site == 'tving': vod_list = LogicOtt.PrevTvingRecentItem
+            else: vod_list = LogicOtt.PrevWavveRecentItem
+            for vod in vod_list:
+                if vod['code'] == code:
+                    if 'refreshed' in vod:
+                        return vod['refreshed']
+            return False
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return False
+
+
+    @staticmethod
+    def set_prev_recent_vod_refreshed(site, code, value):
+        try:
+            if site == 'tving': vod_list = LogicOtt.PrevTvingRecentItem
+            else: vod_list = LogicOtt.PrevWavveRecentItem
+            logger.debug('set_vod_refreshed: code(%s), value(%s)', code, value)
+            for vod in vod_list:
+                if vod['code'] == code:
+                    if 'refreshed' in vod:
+                        vod['refreshed'] = value
+                        break
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
     def get_recent_wavve_list():
         try:
             wavve_list = []
@@ -193,8 +226,10 @@ class LogicOtt(object):
                     item['channel'] = vod['channelname']
                     item['episode'] = vod['episodenumber']
                     item['qvod'] = True if vod['episodetitle'].find('Quick VOD') != -1 else False
+                    item['refreshed'] = False
+                    item['site'] = 'wavve'
 
-                    #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
+                    #logger.debug('{t},{e},{c},{r}'.format(t=item['title'],e=item['episode'],c=item['code'],r=item['refreshed']))
                     if item not in wavve_list: wavve_list.append(item)
 
             logger.debug('[schedule] wavve: recent count: {n}'.format(n=len(wavve_list)))
@@ -204,7 +239,8 @@ class LogicOtt(object):
                 new_list = wavve_list[:]
             else:
                 for item in wavve_list:
-                    if item not in LogicOtt.PrevWavveRecentItem: new_list.append(item)
+                    if LogicOtt.check_prev_recent_vod_refreshed(item['site'], item['code']): item['refreshed'] = True 
+                    else: new_list.append(item)
 
             if len(new_list) > 0:
                 LogicOtt.PrevWavveRecentItem = wavve_list[:]
@@ -221,31 +257,26 @@ class LogicOtt(object):
     def get_recent_tving_list():
         try:
             tving_list = list()
-
             import framework.tving.api as Tving
-            from tving.basic import TvingBasic
-            from tving.model import Episode
 
             page = 1
             page_limit = ModelSetting.get_int('ott_show_recent_page_limit')
 
             for i in range(page_limit):
                 vod_list = Tving.get_vod_list(page=i+1)['body']['result']
+                #logger.debug(json.dumps(vod_list, indent=2))
                 for vod in vod_list:
                     try:
-                        json_data, url = TvingBasic.get_episode_json(vod['episode']['code'], 'FHD')
-                        #episode = Episode('auto')
-                        #episode = TvingBasic.make_episode_by_json(episode, json_data, url)
-                        quick_vod = True if url.find('quick_vod') != -1 else False
-
                         item = dict()
                         item['title'] = LogicOtt.change_text_for_use_filename(vod['program']['name']['ko'])
                         item['code'] = vod['program']['code']
                         item['channel'] = vod['channel']['name']['ko']
                         item['episode'] = vod['episode']['frequency']
-                        item['qvod'] = quick_vod
+                        item['qvod'] = False
+                        item['refreshed'] = False
+                        item['site'] = 'tving'
 
-                        #logger.debug('{t},{e},{q}'.format(t=item['title'],e=item['episode'],q=item['qvod']))
+                        #logger.debug('{t},{e},{c},{r}'.format(t=item['title'],e=item['episode'],c=item['code'],r=item['refreshed']))
                         tving_list.append(item)
                     except:
                         logger.error('skip: failed to get tving recent-vod:%s', vod['episode']['code'])
@@ -258,7 +289,8 @@ class LogicOtt(object):
                 new_list = tving_list[:]
             else:
                 for item in tving_list:
-                    if item not in LogicOtt.PrevTvingRecentItem: new_list.append(item)
+                    if LogicOtt.check_prev_recent_vod_refreshed(item['site'], item['code']): item['refreshed'] = True 
+                    else: new_list.append(item)
 
             if len(new_list) > 0:
                 LogicOtt.PrevTvingRecentItem = tving_list[:]
@@ -348,6 +380,8 @@ class LogicOtt(object):
                 data ={'type':'warning', 'msg':'메타데이터 조회 실패({t})'.format(t=title)}
                 socketio.emit("notify", data, namespace='/framework', broadcate=True)
                 return
+        else:
+            info['program_id'] = LogicOtt.get_ott_show_program_id(title)
 
         # 파일생성: 최초
         if ModelSetting.get_bool('strm_overwrite') == False:
@@ -585,6 +619,7 @@ class LogicOtt(object):
             item['file_path'] = fpath
             item['plex_path'] = LogicOtt.get_plex_path(fpath)
             item['strm_type'] = u'plex' #TODO
+            item['program_id'] = daum_info['program_id']
             if item['status'] == 1 and 'wday' in daum_info:
                 item['wday'] = daum_info['wday']['int_wday']
             else:
@@ -781,6 +816,7 @@ class LogicOtt(object):
             info['title'] = r['title']
             info['site'] = site
             info['status'] = r['status']
+            info['program_id'] = r['program_id']
             score = 0
             for p in r['thumb']:
                 if p['score'] > score and p['aspect'] == 'poster':
@@ -793,6 +829,28 @@ class LogicOtt(object):
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
+
+    @staticmethod
+    def get_ott_show_program_id(title):
+        try:
+            info = {}
+            site_list = ['tving', 'wavve']
+            from metadata.logic_ott_show import LogicOttShow
+            LogicOttShow = LogicOttShow(LogicOttShow)
+
+            r = LogicOttShow.search(title)
+            if len(r) == 0: return None
+            code = None
+            for site in site_list: 
+                if site in r: code = r[site][0]['code']; break;
+            if not code: return None
+            r = LogicOttShow.info(code)
+            if not r: return None
+            return r['code'][2:]
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
 
     @staticmethod
     def load_movie_info_from_file(fpath):
@@ -867,6 +925,7 @@ class LogicOtt(object):
                     continue
 
                 count += 1
+                LogicOtt.set_prev_recent_vod_refreshed(item['site'], item['program_id'], True)
 
                 logger.debug('Daum 정보 조회 및 갱신: %s', item['title'])
                 daum_info = LogicOtt.get_daum_tv_info(item['title'])
@@ -1515,6 +1574,25 @@ class LogicOtt(object):
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
 
+    @staticmethod
+    def show_onair_refresh():
+        try:
+            count = 0
+            entities = OttShowItem.get_entities_by_status(1)
+            for entity in entities:
+                if entity.program_id == None or entity.program_id == u'':
+                    entity.program_id = LogicOtt.get_ott_show_program_id(entity.title)
+                    info = json.loads(entity.info)
+                    info['program_id'] = entity.program_id
+                    entity.info = py_unicode(json.dumps(info))
+                    count = count + 1
+                    entity.save()
+            return {'ret':'success', 'msg':'{c}건의 방영중 아이템정보를 갱신하였습니다.'.format(c=count) }
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+ 
     @staticmethod
     def movie_reset_handler(target, scope):
         try:
