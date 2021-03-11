@@ -75,6 +75,7 @@
     {{ macros.setting_input_text('movie_kodi_path', 'KODI 라이브러리 경로', value=arg['movie_kodi_path'], desc=['KODI라이브러리 경로, DRM영화파일 지원, * Plex에서는 DRM 재생 미지원']) }}
     {{ macros.setting_input_text('movie_plex_path', 'PLEX 라이브러리 경로', value=arg['movie_plex_path'], desc=['PLEX라이브러리 경로, DRM영화 미지원, * strm 파일생성후 PMS로 스캔명령 전송']) }}
     {{ macros.setting_input_text('movie_fname_rule', '파일명 생성규칙', value=arg['movie_fname_rule'], desc=['파일명 생성규칙, 지원값: {title}, {year}, {country}, {genre}, {rating}, {code}, {drm}, {mpaa}', 'title, year외의 값은 대괄호안에 포함됨, 비어있는 경우 기본값: title']) }}
+    {{ macros.setting_checkbox('movie_hide_adult', '성인영화감추기', value=arg['movie_hide_adult'], desc=['On: 인기영화목록에서성인영화를 감춤(Wavve: 성인,성인+)']) }}
     {{ macros.setting_checkbox('movie_auto_classfy', '영화자동분류 사용', value=arg['movie_auto_classfy'], desc=['On: strm파일을 메타정보에 따라 분류된 폴더 하위에 생성', 'Off: 라이브러리 경로에 영화파일 생성']) }}
     <div id="movie_auto_classfy_div" class="collapse">
     {{ macros.setting_input_text('movie_classfy_rule', '하위폴더 생성규칙', value=arg['movie_classfy_rule'], desc=['하위폴더 생성규칙, {country}, {genre} 지원', '{country}/{genre} 지정시, 한국/액션 폴더에 생성']) }}

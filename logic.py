@@ -76,6 +76,7 @@ class Logic(object):
         'movie_country_rule': u'default,해외영화\nfail,기타\n한국,국내영화\n일본|중국|홍콩,아시아영화',
         'movie_genre_rule'  : u'default,기타\nfail,기타\n액션|어드벤쳐,액션',
         'movie_fname_rule'  : u'{title} ({year})',
+        'movie_hide_adult'  : u'False',
         #'movie_list_path'   : u'/media/orial/OTT/.movie_list',
         #'movie_manual_path' : u'/mnt/gdriv/OTT/MOVIE/Manual',
         #'movie_test_title'  : u'',

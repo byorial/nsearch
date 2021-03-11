@@ -884,6 +884,7 @@ class OttPopularMovieItem(db.Model):
             ret = {}
             page = 1
             page_size = ModelSetting.get_int('list_page_size')
+            hide_adult = ModelSetting.get_bool('movie_hide_adult')
             search = ''
             
             if 'page' in req.form: page = int(req.form['page'])
@@ -894,7 +895,7 @@ class OttPopularMovieItem(db.Model):
             country = req.form['country'] if 'country' in req.form else 'all'
             order = req.form['order'] if 'order' in req.form else 'desc'
 
-            query = OttPopularMovieItem.make_query(search=search, strm_type=strm_type, genre=genre, country=country, site=site, order=order)
+            query = OttPopularMovieItem.make_query(search=search, strm_type=strm_type, genre=genre, country=country, site=site, order=order, hide_adult=hide_adult)
             if query is None: return ret
 
             count = query.count()
@@ -910,7 +911,7 @@ class OttPopularMovieItem(db.Model):
             logger.error(traceback.format_exc())
 
     @staticmethod
-    def make_query(search='', strm_type='all', genre='all', country='all', site="all", order='desc'):
+    def make_query(search='', strm_type='all', genre='all', country='all', site="all", order='desc', hide_adult=False):
         query = db.session.query(OttPopularMovieItem)
 
         if site != 'all': query = query.filter(OttPopularMovieItem.site == site)
@@ -924,6 +925,9 @@ class OttPopularMovieItem(db.Model):
         if country != 'all': 
             if country == "kor": query = query.filter(OttPopularMovieItem.country.contains(u'한국'))
             else: query = query.filter(not_(OttPopularMovieItem.country.contains(u'한국')))
+        if hide_adult:
+            query = query.filter(not_(OttPopularMovieItem.genre.contains(u'성인')))
+
         if search != '': query = query.filter(OttPopularMovieItem.title.like('%'+search+'%'))
         if order == 'desc': query = query.order_by(desc(OttPopularMovieItem.id))
         else: query = query.order_by(OttPopularMovieItem.id)

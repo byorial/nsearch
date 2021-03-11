@@ -113,6 +113,7 @@ class LogicOtt(object):
                         info = json.loads(entity.info)
                         info['site'] = recent['site']
                         info['episode'] = recent['episode']
+                        info['program_id'] = program_id
                         target_list.append(info)
                 """
                 for item in LogicOtt.OttShowList:
@@ -181,16 +182,29 @@ class LogicOtt(object):
             return False
 
     @staticmethod
-    def check_prev_recent_vod_refreshed(site, code, episode=None):
+    def get_qvod_from_prev_recent_vod(item):
         try:
-            if site == 'tving': vod_list = LogicOtt.PrevTvingRecentItem
+            if item['site'] == 'tving': vod_list = LogicOtt.PrevTvingRecentItem
             else: vod_list = LogicOtt.PrevWavveRecentItem
             for vod in vod_list:
-                if vod['code'] == code:
+                if vod['code'] == item['code']:
+                    if vod['episode'] != u'' and item['episode'] == vod['episode']: return vod['qvod']
+            return None
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return None
+
+    @staticmethod
+    def check_prev_recent_vod_refreshed(item):
+        try:
+            if item['site'] == 'tving': vod_list = LogicOtt.PrevTvingRecentItem
+            else: vod_list = LogicOtt.PrevWavveRecentItem
+            for vod in vod_list:
+                if vod['code'] == item['code']:
                     if 'refreshed' in vod:
-                        if episode == None: return vod['refreshed']
-                        else:
-                            if vod['episode'] != u'' and episode == vod['episode']:
+                        if 'episode' in vod:
+                            if vod['episode'] != u'' and (item['episode'] == vod['episode'] and item['qvod'] == vod['qvod']):
                                 return vod['refreshed']
             return False
         except Exception as e:
@@ -200,21 +214,35 @@ class LogicOtt(object):
 
 
     @staticmethod
-    def set_prev_recent_vod_refreshed(site, code, value):
+    def set_prev_recent_vod_refreshed(item, value):
         try:
-            if site == 'tving': vod_list = LogicOtt.PrevTvingRecentItem
+            if item['site'] == 'tving': vod_list = LogicOtt.PrevTvingRecentItem
             else: vod_list = LogicOtt.PrevWavveRecentItem
-            logger.debug('set_vod_refreshed: code(%s), value(%s), listlen(%d)', code, value, len(vod_list))
+            logger.debug('set_vod_refreshed: code(%s), value(%s), listlen(%d)', item['program_id'], value, len(vod_list))
             for vod in vod_list:
                 #logger.debug('----- %s,%s,%s', vod['site'], vod['code'], vod['title'])
-                if vod['code'] == code:
+                if vod['code'] == item['program_id'] and vod['episode'] == item['episode']:
                     if 'refreshed' in vod:
                         vod['refreshed'] = value
-                        logger.debug('set_vod_refreshed: %s,%s,%s,%s', vod['site'],vod['title'],vod['code'],vod['episode'])
+                        logger.debug('set_vod_refreshed: %s,%s,%s,%s,%s', vod['site'],vod['title'],vod['code'],vod['episode'], value)
                         break
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
+    
+    @staticmethod
+    def get_date_from_fname(fname):
+        try:
+            rx = r"[.](?P<date>\d{6})[.]"
+            match = re.compile(rx).search(fname)
+            if match == None:
+                return fname
+            return match.group('date')
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+            return fname
 
     @staticmethod
     def get_recent_wavve_list():
@@ -228,11 +256,12 @@ class LogicOtt(object):
                 try: vod_list = Wavve.vod_newcontents(page=i+1)['list']
                 except TypeError: vod_list = []
                 for vod in vod_list:
+                    if vod['type'] == 'onair': continue # 실시간방송제외
                     item = dict()
                     item['title'] = LogicOtt.change_text_for_use_filename(vod['programtitle'])
                     item['code'] = vod['programid']
                     item['channel'] = vod['channelname']
-                    item['episode'] = vod['episodenumber']
+                    item['episode'] = str(vod['episodenumber']) if vod['episodenumber'] != '' else vod['contentid']
                     item['qvod'] = True if vod['episodetitle'].find('Quick VOD') != -1 else False
                     item['refreshed'] = False
                     item['site'] = 'wavve'
@@ -247,7 +276,7 @@ class LogicOtt(object):
                 new_list = wavve_list[:]
             else:
                 for item in wavve_list:
-                    if LogicOtt.check_prev_recent_vod_refreshed(item['site'], item['code']):
+                    if LogicOtt.check_prev_recent_vod_refreshed(item):
                         logger.debug('already refreshed program(%s:%s:%s)', item['title'], item['episode'], item['site'])
                         item['refreshed'] = True 
                     else:
@@ -269,6 +298,7 @@ class LogicOtt(object):
         try:
             tving_list = list()
             import framework.tving.api as Tving
+            from tving.basic import TvingBasic
 
             page = 1
             page_limit = ModelSetting.get_int('ott_show_recent_page_limit')
@@ -279,13 +309,17 @@ class LogicOtt(object):
                 for vod in vod_list:
                     try:
                         item = dict()
+                        item['site'] = 'tving'
                         item['title'] = LogicOtt.change_text_for_use_filename(vod['program']['name']['ko'])
                         item['code'] = vod['program']['code']
                         item['channel'] = vod['channel']['name']['ko']
-                        item['episode'] = vod['episode']['frequency']
-                        item['qvod'] = False
+                        item['episode'] = str(vod['episode']['frequency']) if vod['episode']['frequency'] != 0 else str(vod['episode']['broadcast_date'])
+
+                        item['qvod'] = LogicOtt.get_qvod_from_prev_recent_vod(item)
+                        if item['qvod'] == None:
+                            json_data, url = TvingBasic.get_episode_json(vod['episode']['code'], Tving.get_quality_to_tving('FHD'))
+                            item['qvod'] = True if url.find('quickvood') != -1 else False
                         item['refreshed'] = False
-                        item['site'] = 'tving'
 
                         #logger.debug('{s},{t},{e},{c},{r}'.format(s=item['site'], t=item['title'],e=item['episode'],c=item['code'],r=item['refreshed']))
                         tving_list.append(item)
@@ -300,7 +334,7 @@ class LogicOtt(object):
                 new_list = tving_list[:]
             else:
                 for item in tving_list:
-                    if LogicOtt.check_prev_recent_vod_refreshed(item['site'], item['code']):
+                    if LogicOtt.check_prev_recent_vod_refreshed(item):
                         item['refreshed'] = True 
                         logger.debug('already refreshed program(%s:%s:%s)', item['title'], item['episode'], item['site'])
                     else: new_list.append(item)
@@ -940,7 +974,7 @@ class LogicOtt(object):
                     continue
 
                 count += 1
-                LogicOtt.set_prev_recent_vod_refreshed(item['site'], item['program_id'], True)
+                LogicOtt.set_prev_recent_vod_refreshed(item, True)
 
                 logger.debug('Daum 정보 조회 및 갱신: %s', item['title'])
                 daum_info = LogicOtt.get_daum_tv_info(item['title'])
