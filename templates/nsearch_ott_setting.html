@@ -48,6 +48,11 @@
     {{ macros.setting_input_int('ott_show_recent_page_limit', '최근VOD페이지수', value=arg['ott_show_recent_page_limit'], desc=['스케쥴링시 조회할 최근 페이지 수']) }}
     {{ macros.setting_input_int('meta_update_interval', '메타갱신 SleepTime', value=arg['meta_update_interval'], desc=['메타갱신 휴식시간(초)','여러파일 메타갱신시 파일처리당 휴식시간']) }}
     {{ macros.setting_checkbox('meta_update_notify', '메타갱신개별알림', value=arg['meta_update_notify'], desc='On : 메타갱신시 파일별 알림, Off: 메타갱신 완료시 1번만 알림') }}
+    {{ macros.setting_checkbox('show_auto_classfy', 'TV자동분류 사용', value=arg['show_auto_classfy'], desc=['On: strm파일을 메타정보에 따라 분류된 폴더 하위에 생성', 'Off: 라이브러리 경로에 파일 생성']) }}
+    <div id="show_auto_classfy_div" class="collapse">
+    {{ macros.setting_input_text('show_classfy_rule', '하위폴더 생성규칙', value=arg['show_classfy_rule'], desc=['하위폴더 생성규칙, {status}, {genre} 지원', '{status}/{genre} 지정시, 방영중/드라마 폴더에 생성', '{status}: 방영상태-방영중,종영,기타, {genre}:장르']) }}
+    {{ macros.setting_input_textarea('show_genre_rule', '생성규칙-장르별', desc=['장르분류규칙, 비어있는 경우 검사하지 않음', '\"장르,폴더명\" 형식, 여러장르 지정시 \"드라마|웹드라마,드라마\"', '여러조건 입력시 구분자는 Enter, *default,fail값 설정필수, 지우지마세요'], value=arg['show_genre_rule'], row='3') }}
+    </div>
    {{ macros.m_tab_content_end() }}
    {{ macros.m_tab_content_start('movie', false) }}
 {{ macros.setting_top('스케쥴링 작동') }}
@@ -108,12 +113,18 @@
 var package_name = "{{arg['package_name'] }}";
 
 $(document).ready(function(){
+  use_collapse("show_auto_classfy");
   use_collapse("movie_auto_classfy");
+});
+
+$('#show_auto_classfy').change(function() {
+  use_collapse('show_auto_classfy');
 });
 
 $('#movie_auto_classfy').change(function() {
   use_collapse('movie_auto_classfy');
 });
+
 
 $("body").on('click', '#show_manual_scheduler_btn,#movie_manual_scheduler_btn', function(e){
   e.preventDefault();

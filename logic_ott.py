@@ -414,10 +414,9 @@ class LogicOtt(object):
             logger.error(traceback.format_exc())
 
     @staticmethod
-    def do_show_strm_proc(ctype, target_path, section_id):
+    def do_show_strm_proc(ctype, title):
         logger.debug('Thread started:do_show_strm_proc()')
 
-        title = os.path.splitext(os.path.basename(target_path))[0]
         info = LogicOtt.get_daum_tv_info(title)
         if info is None:
             logger.warning('다음 메타데이터 조회 실패(%s), OTT조회 시도', title)
@@ -437,6 +436,22 @@ class LogicOtt(object):
                 data ={'type':'warning', 'msg':'메타데이터 조회 실패({t})'.format(t=title)}
                 socketio.emit("notify", data, namespace='/framework', broadcate=True)
                 return
+
+        filename = LogicOtt.change_text_for_use_filename(title)
+        library_path = LogicOtt.get_show_target_path(info)
+        if not os.path.isdir(library_path): os.makedirs(library_path)
+        plex_path = LogicOtt.get_plex_path(library_path)
+        import plex
+        section_id = plex.LogicNormal.get_section_id_by_filepath(plex_path)
+        if section_id == -1:
+            data = {'type':'warning', 'msg':'Plex경로오류! \"{p}\" 경로를 확인해 주세요'.format(p=plex_path)}
+            socketio.emit("notify", data, namespace='/framework', broadcate=True)
+            return
+
+        logger.debug('get_section_id: path(%s), section_id(%s)', library_path, section_id)
+        logger.debug('local_path(%s), plex_path(%s)', library_path, plex_path)
+        target_path = os.path.join(library_path, filename + '.strm')
+        logger.debug('[do_show_strm_proc] target_fpath: %s', target_path)
 
         # 파일생성: 최초
         if ModelSetting.get_bool('strm_overwrite') == False:
@@ -514,8 +529,6 @@ class LogicOtt(object):
             code = None
             site = None
 
-            #title = req.form['title']
-            #ctype = req.form['ctype']
             logger.debug('strm 생성 요청하기(유형:%s, 제목:%s)', ctype, title)
             library_path = ModelSetting.get('show_library_path')
 
@@ -523,19 +536,8 @@ class LogicOtt(object):
                 logger.error('show_library_path error(%s)', library_path)
                 return {'ret':'error', 'msg':'{c} 라이브러리 경로를 확인하세요.'.format(c=ctype)}
 
-            filename = LogicOtt.change_text_for_use_filename(title)
-            target_path = os.path.join(library_path, filename + '.strm')
-
-            plex_path = LogicOtt.get_plex_path(library_path)
-            logger.debug('local_path(%s), plex_path(%s)', library_path, plex_path)
-
-            import plex
-            section_id = plex.LogicNormal.get_section_id_by_filepath(plex_path)
-            if section_id == -1:
-                return {'ret':'error', 'msg':'Plex경로오류! \"{p}\" 경로를 확인해 주세요'.format(p=plex_path)}
-
-            logger.debug('get_section_id: path(%s), section_id(%s)', library_path, section_id)
-            LogicOtt.do_show_strm_proc(ctype, target_path, section_id)
+            #LogicOtt.do_show_strm_proc(ctype, target_path, section_id)
+            LogicOtt.do_show_strm_proc(ctype, title)
 
             return {'ret':'success', 'msg':'{title} 추가요청 완료'.format(title=title)}
         except Exception as e:
@@ -1283,6 +1285,55 @@ class LogicOtt(object):
         except Exception as e:
             logger.error('Exception:%s', e)
             logger.error(traceback.format_exc())
+
+    @staticmethod
+    def get_show_target_genre(info):
+        try:
+            genre = None
+            rule_dict = ModelSetting.get_rule_dict('show_genre_rule')
+            default = rule_dict['default']
+            base = ['default','fail']
+            for k, v in rule_dict.items():
+                if k in base: continue
+                if info['genre'] in k.split('|'):
+                    genre = v
+                    break
+            if genre is None:
+                if default == '{genre}': genre = info['genre']
+                else: genre = rule_dict['fail'] if 'fail' in rule_dict else u'기타'
+            return genre
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
+    @staticmethod
+    def get_show_target_path(info):
+        try:
+            code = info['code']
+            _status_map = [u'방영예정', u'방영중', u'종영']
+            #  자동분류미사용
+            if not ModelSetting.get_bool('show_auto_classfy'):
+                return ModelSetting.get('show_library_path')
+
+            # 자동분류 사용
+            base_dir = ModelSetting.get('show_library_path')
+
+            target_dir = ModelSetting.get('show_classfy_rule')
+            genre_dir = LogicOtt.get_show_target_genre(info)
+
+            try: status_dir = _status_map[info['status']]
+            except: status_dir = u'기타'
+            target_dir = target_dir.replace('{status}', status_dir)
+            target_dir = target_dir.replace('{genre}', genre_dir)
+
+            target_path =  os.path.join(base_dir, target_dir)
+            logger.info('get_show_target_path(): result({p})'.format(p=target_path))
+            return target_path
+
+        except Exception as e:
+            logger.error('Exception:%s', e)
+            logger.error(traceback.format_exc())
+
 
     @staticmethod
     def get_movie_target_fname(info):
