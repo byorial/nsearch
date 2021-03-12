@@ -64,7 +64,7 @@ class Logic(object):
         'auto_create_strm_in_whitelist': 'False',
         'show_auto_classfy': 'False',
         'show_classfy_rule': u'{status}/{genre}',
-        'show_genre_rule'  : u'default,기타\nfail,기타\n드라마|웹드라마,드라마\n예능|음악,예능\n키즈|애니메니션,어린이',
+        'show_genre_rule'  : u'default,{genre}\nfail,기타\n드라마|웹드라마,드라마\n예능|음악,예능\n키즈|애니메니션,어린이',
 
         # MOVIE-OTT
         'ott_movie_scheduler_auto_start' : 'False', 
