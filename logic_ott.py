@@ -429,8 +429,14 @@ class LogicOtt(object):
                 return
         else:
             program_id = LogicOtt.get_ott_show_program_id(title)
-            site = 'wavve' if program_id[1] == 'W' else 'tving'
-            info['program_id'] = program_id[2:]
+            if program_id != None:
+                site = 'wavve' if program_id[1] == 'W' else 'tving'
+                info['program_id'] = program_id[2:]
+            else:
+                logger.warning('OTT 메타데이터 조회 실패(%s)', title)
+                data ={'type':'warning', 'msg':'메타데이터 조회 실패({t})'.format(t=title)}
+                socketio.emit("notify", data, namespace='/framework', broadcate=True)
+                return
 
         # 파일생성: 최초
         if ModelSetting.get_bool('strm_overwrite') == False:
@@ -850,12 +856,12 @@ class LogicOtt(object):
             from metadata.logic_ott_show import LogicOttShow
             LogicOttShow = LogicOttShow(LogicOttShow)
 
-            r = LogicOttShow.search(title)
+            r = LogicOttShow.search(title, manual=True)
             if len(r) == 0: return None
 
             code = None
             for site in site_list: 
-                if site in r: code = r[site][0]['code']; break;
+                if site in r and len(r[site]) > 0: code = r[site][0]['code']; break;
             if not code: return None
 
             r = LogicOttShow.info(code)
@@ -887,11 +893,11 @@ class LogicOtt(object):
             from metadata.logic_ott_show import LogicOttShow
             LogicOttShow = LogicOttShow(LogicOttShow)
 
-            r = LogicOttShow.search(title)
+            r = LogicOttShow.search(title, manual=True)
             if len(r) == 0: return None
             code = None
             for site in site_list: 
-                if site in r: code = r[site][0]['code']; break;
+                if site in r and len(r[site]) > 0: code = r[site][0]['code']; break;
             if not code: return None
             r = LogicOttShow.info(code)
             if not r: return None
